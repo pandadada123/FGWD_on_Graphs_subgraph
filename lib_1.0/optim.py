@@ -183,9 +183,11 @@ def cg(a, b, M, reg, f, df, G0=None, numItermax=500, stopThr=1e-09, verbose=Fals
     else:
         G = G0
 
-    def cost(G):
-        return np.sum(M * G) + reg * f(G)  # Regularized discrete optimal transport, the better way is convex combination?
+    def cost(G):  # objective of FGWD
+        return np.sum(M * G) + reg * f(G)  # (Regularized discrete optimal transport)
                                             # for GWD, M is zero matrix. and reg=1
+                                            # M is actually already (1-alpha)M for FGWD
+                                            
     f_val = cost(G) #f(xt)  initerialization of f_val
 
     if log:
@@ -212,7 +214,7 @@ def cg(a, b, M, reg, f, df, G0=None, numItermax=500, stopThr=1e-09, verbose=Fals
         # G4=np.append(G3,  np.zeros([G_shape[0],1]),  axis=1)
         # G4=np.append(G3,  np.ones([G_shape[0],1])*100,  axis=1)
         
-        Mi = M + reg * df(G) #Gradient(xt)
+        Mi = M + reg * df(G) #Gradient(xt) of FGWD
         # Mi = M + reg * G4 #Gradient(xt) For Gromov, M=0, Mi=G4
                             # For FGWD, M is the gradient of WD and df(G) is of GWD.
 

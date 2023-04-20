@@ -1,0 +1,230 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar 29 09:06:16 2023
+
+@author: Pandadada
+"""
+
+import numpy as np
+import os,sys
+
+# sys.path.append(os.path.realpath('../lib'))
+sys.path.append(os.path.realpath('E:/Master Thesis/FGWD_on_Graphs_subgraph/lib_1.0'))
+
+from graph import graph_colors,draw_rel,draw_transp,Graph,wl_labeling
+# from ot_distances import Fused_Gromov_Wasserstein_distance,Wasserstein_distance
+from ot_distances import Fused_Gromov_Wasserstein_distance
+import copy
+# from data_loader import load_local_data,histog,build_noisy_circular_graph
+import matplotlib.pyplot as plt
+import networkx as nx
+import ot
+
+Num = 500
+num = 0
+yes = 0
+while num<Num:
+
+    plt.close("all")
+    
+    #%% build fully connected graph
+    def build_fully_graph(N=30,mu=0,sigma=0.3):
+        v=mu+sigma*np.random.randn(N);
+        v=np.int_(np.floor(v)) # discrete attributes 
+        g=Graph()
+        g.add_nodes(list(range(N)))
+        for i in range(N):
+              g.add_one_attribute(i,v[i])
+               # g.add_one_attribute(i,2)
+              for j in range(N):
+                    if j != i:
+                        g.add_edge((i,j))
+        return g
+    
+    #%% build comunity graphs
+    def build_comunity_graph(N=30,mu=0,sigma=0.3,pw=0.8):
+        v=mu+sigma*np.random.randn(N);
+        v=np.int_(np.floor(v)) # discrete attributes 
+        g=Graph()
+        g.add_nodes(list(range(N)))
+        for i in range(N):
+             g.add_one_attribute(i,v[i])
+             for j in range(N):
+                 if j != i:
+                     r=np.random.rand()
+                     if  r<pw:
+                         g.add_edge((i,j))
+        return g
+    
+    #%% merge community graphs
+    def merge_graph(g1,g2):  # inputs are nx_graph
+        gprime=nx.Graph(g1)
+        N0=len(gprime.nodes())
+        g2relabel=nx.relabel_nodes(g2, lambda x: x +N0)
+        gprime.add_nodes_from(g2relabel.nodes(data=True))
+        gprime.add_edges_from(g2relabel.edges(data=True)) 
+        gprime.add_edge(N0-1,N0)
+        
+        return gprime
+    
+    #%% build random graph G1
+    def build_G1(G,N=30,mu=0,sigma=0.3,pw=0.8):
+        v=mu+sigma*np.random.randn(N);
+        v=np.int_(np.floor(v)) # discrete attributes 
+    
+        L=len(G.nodes())
+        G.add_nodes(list(range(N)))
+        
+        NN = N+L
+        for i in range(L,NN):
+              G.add_one_attribute(i,v[i-L])
+        for i in range(NN):
+              for j in range(NN):
+                    if j != i:
+                        r=np.random.rand()
+                        if  r<pw:
+                          G.add_edge((i,j))
+        return G
+    
+    #%% 
+    # N=5
+    # mu1=-1.5
+    # mu2=1.5
+    # mu3=3
+    # pw1=0.8
+    # pw2=0.3
+    # pw3=0.8
+    # vmin=-3
+    # vmax=7
+    # np.random.seed(12)
+    # G11=build_comunity_graph(N=N,mu=mu1,sigma=0.8,pw=pw1)
+    # G12=build_comunity_graph(N=N,mu=mu2,sigma=0.8,pw=pw2)
+    # G13=build_comunity_graph(N=N,mu=mu3,sigma=0.8,pw=pw3)
+    # com_graph={1:G11,2:G12,3:G13}
+    
+    #%% build a fully connected graph (also the subgraph)
+    N=5
+    mu1=0
+    # np.random.seed(10)  # different graph with different seed
+    G11=build_fully_graph(N=N,mu=mu1,sigma=2)
+    
+    #%% merge 
+    # n=0
+    # Num=[]
+    # while n<=3:
+    #     num=np.random.randint(1,4) # randomly generate a number within [1,2,3]
+    #     Num=np.append(Num,num)
+    #     g1=merge_graph(g1, com_graph[num].nx_graph)
+    #     n+=1
+        
+    # G1=Graph(g1)
+    
+    #%% build G1
+    N2=20
+    G12=copy.deepcopy(G11) #initialize with subgraph
+    G1=build_G1(G12,N=N2,mu=2,sigma=4,pw=0.1)
+       
+    # check if all nodes in G1 are connected
+    temp=G1.nx_graph._adj
+    if any(value=={} for value in temp.values()) == True:
+        print("oops")
+        continue
+        
+    #%%
+    G2_nodummy=copy.deepcopy(G11)
+    # G2_nodummy=build_fully_graph(N=25,mu=mu1,sigma=0.3)
+    G2=copy.deepcopy(G2_nodummy)
+    G2.add_attributes({100: 0 })  # add dummy 
+    
+    #%%  The followings are fixed
+    g1 = G1.nx_graph
+    g2 = G2.nx_graph
+    
+    #%% check if every pair of nodes have path
+    n1 = len(G1.nodes())
+    try:
+        for ii in range(n1):  
+             nx.shortest_path_length(g1,source=0,target=ii)
+    except: 
+        print("oops2")
+        continue
+                
+    #%%
+    vmin=0
+    vmax=9  # the range of color
+    
+    # plt.figure(figsize=(8,5))
+    # draw_rel(g1,vmin=vmin,vmax=vmax,with_labels=True,draw=False)
+    # draw_rel(g2,vmin=vmin,vmax=vmax,with_labels=True,shiftx=3,draw=False)
+    # plt.title('Two graphs. Color indicates the label')
+    # plt.show()
+    
+    #%% weights and feature metric
+    p1=ot.unif(len(G1.nodes()))
+    p2_nodummy=1/len(G1.nodes()) * np.ones([len(G2_nodummy.nodes())])    # ACTUALLY NOT USED IN THE ALGORITHM
+    p2=np.append(p2_nodummy,1-sum(p2_nodummy))
+    
+    fea_metric = 'dirac'
+    # fea_metric = 'hamming'
+    # fea_metric = 'sqeuclidean'
+    
+    #%% use the function from FGWD all the time
+    thresh=0.004
+    # WD
+    dw,log_WD,transp_WD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=0,features_metric=fea_metric,method='shortest_path',loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
+    # fig=plt.figure(figsize=(10,8))
+    # plt.title('WD coupling')
+    # draw_transp(G1,G2,transp_WD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
+    # plt.show()
+    
+    # GWD
+    dgw,log_GWD,transp_GWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=1,features_metric=fea_metric,method='shortest_path',loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
+    # fig=plt.figure(figsize=(10,8))
+    # plt.title('GWD coupling')
+    # draw_transp(G1,G2,transp_GWD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
+    # plt.show()
+    
+    # FGWD
+    alpha=0.5
+    dfgw,log_FGWD,transp_FGWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=alpha,features_metric=fea_metric,method='shortest_path',loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
+    # fig=plt.figure(figsize=(10,8))
+    # plt.title('FGWD coupling')
+    # draw_transp(G1,G2,transp_FGWD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
+    # plt.show()
+    
+    #%% FGWD, find alpha
+    # alld=[]
+    # x=np.linspace(0,1,10)
+    # for alpha in x:
+    #     d,log,transp=Fused_Gromov_Wasserstein_distance(alpha=alpha,features_metric=fea_metric).graph_d(G1,G2,p1,p2,p2_nodummy)
+    #     alld.append(d)
+    # fig=plt.figure(figsize=(10,8))
+    # plt.plot(x,alld)
+    # plt.title('Evolution of FGW dist in wrt alpha \n max={}'.format(x[np.argmax(alld)]))
+    # plt.xlabel('Alpha')
+    # plt.xlabel('FGW dist')
+    # plt.show()
+    
+    # # optimal matching
+    # fig=plt.figure(figsize=(10,8))
+    # thresh=0.004
+    # alpha_opt=x [ alld.index(max(alld)) ]
+    # dfgw_opt,log_FGWD_opt,transp_FGWD_opt=Fused_Gromov_Wasserstein_distance(alpha=alpha_opt,features_metric=fea_metric).graph_d(G1,G2,p1,p2,p2_nodummy)
+    # # d=dfgw.graph_d(g1,g2)
+    # # plt.title('FGW coupling, dist : '+str(np.round(dfgw,3)),fontsize=15)
+    # plt.title('FGW coupling, alpha = opt')
+    # draw_transp(G1,G2,transp_FGWD_opt,shiftx=2,shifty=0.5,thresh=thresh,
+    #             swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
+    # plt.show()
+    
+    # print('Wasserstein distance={}, Gromov distance={} \nFused Gromov-Wasserstein distance for alpha {} = {}'.format(dw,dgw,alpha,dfgw))
+
+    #%%
+    thre1=1e-5
+
+    if dfgw<thre1:
+        yes+=1
+    num+=1
+    print(num)
+    
+print(yes/Num)

@@ -107,6 +107,25 @@ def init_matrix(C1,C2,T,p,q,loss_fun='square_loss'):
                     np.dot(np.ones(C1.shape[0]).reshape(1, -1), T),
                     f2(C2).T
                     )
+     #%% also suitable for partial coupling (marginals of T does not sum up to 1) from Liu 2023
+    # ## SAME RESULTS AS ABOVE
+    # ## T matrix is also the input of this function
+    # ## p and q are actually no need 
+    # constC1 = np.dot(
+    #                 f1(C1),
+    #                 np.dot(
+    #                        T, 
+    #                        np.dot(np.ones(C2.shape[0]).reshape(-1, 1) , np.ones(C2.shape[0]).reshape(1,-1) )
+    #                        )
+    #                 )
+
+    # constC2 = np.dot(
+    #                 np.dot(
+    #                        np.dot(np.ones(C1.shape[0]).reshape(-1, 1) ,  np.ones(C1.shape[0]).reshape(1, -1) ), 
+    #                        T
+    #                        ),
+    #                 f2(C2).T
+    #                 )
     
     #%%
     constC=constC1+constC2
@@ -312,6 +331,11 @@ def fgw_lp(M,C1,C2,C2_nodummy,p,q,q_nodummy,loss_fun='square_loss',alpha=1,amijo
         # epsilon = 2*1e-2 * np.random.randn()
         # G0=G0+epsilon*temp 
         
+        # np.random.seed()
+        # G0 = np.random.normal(0.1, 0.01, size = (len(C1),len(C2)) )
+        # G0 = np.random.rand(len(C1),len(C2))
+        # print(G0)
+        
    #%% no trick     
     # L=cal_L(C1,C2)
     
@@ -323,13 +347,13 @@ def fgw_lp(M,C1,C2,C2_nodummy,p,q,q_nodummy,loss_fun='square_loss',alpha=1,amijo
     # return optim.cg(p,q,M,alpha,f,df,G0,amijo=amijo,C1=C1,C2=C2,constC=None,**kwargs) # for GWD, alpha = reg=1, M=0
 
    #%% trick by Peyre and partial aligment
-    def f(G):
+    def f(G):  # objective function of GWD
         G_nodummy = G[:,0:len(G[0])-1]  
         constC,hC1,hC2=init_matrix(C1,C2_nodummy,G_nodummy,p,q_nodummy,loss_fun)        
 
         return gwloss(constC,hC1,hC2,G)
     
-    def df(G):
+    def df(G): # gradient of GWD
         G_nodummy = G[:,0:len(G[0])-1]  
         constC,hC1,hC2=init_matrix(C1,C2_nodummy,G_nodummy,p,q_nodummy,loss_fun)        
 
