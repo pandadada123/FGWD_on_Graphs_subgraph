@@ -219,7 +219,7 @@ def cg(a, b, M, reg, f, df, G0=None, numItermax=500, stopThr=1e-09, verbose=Fals
                             # For FGWD, M is the gradient of WD and df(G) is of GWD.
 
         # set M positive 
-        Mi += Mi.min() 
+        Mi += Mi.min()  # no big effects 
         # Mi-= Mi.min() 
         # Mi += np.min(Mi) # is the same as original one
 

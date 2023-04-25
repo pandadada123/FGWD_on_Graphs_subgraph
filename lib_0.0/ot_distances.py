@@ -12,63 +12,63 @@ The following classes adapt the OT distances to Graph objects
 class BadParameters(Exception):
     pass
 
-class Wasserstein_distance():
-    """ Wasserstein_distance is a class used to compute the Wasserstein distance between features of the graphs.
+# class Wasserstein_distance():
+#     """ Wasserstein_distance is a class used to compute the Wasserstein distance between features of the graphs.
     
-    Attributes
-    ----------    
-    features_metric : string
-                      The name of the method used to compute the cost matrix between the features
-    transp : ndarray, shape (ns,nt) 
-           The transport matrix between the source distribution and the target distribution 
-    """
-    def __init__(self,features_metric='sqeuclidean'): #remplacer method par distance_method  
-        self.features_metric=features_metric
-        self.transp=None
+#     Attributes
+#     ----------    
+#     features_metric : string
+#                       The name of the method used to compute the cost matrix between the features
+#     transp : ndarray, shape (ns,nt) 
+#            The transport matrix between the source distribution and the target distribution 
+#     """
+#     def __init__(self,features_metric='sqeuclidean'): #remplacer method par distance_method  
+#         self.features_metric=features_metric
+#         self.transp=None
 
-    def reshaper(self,x):
-        x=np.array(x)
-        try:
-            a=x.shape[1]
-            return x
-        except IndexError:
-            return x.reshape(-1,1)
+#     def reshaper(self,x):
+#         x=np.array(x)
+#         try:
+#             a=x.shape[1]
+#             return x
+#         except IndexError:
+#             return x.reshape(-1,1)
 
-    def graph_d(self,graph1,graph2,t1masses,t2masses):
-        """ Compute the Wasserstein distance between two graphs. Uniform weights are used.        
-        Parameters
-        ----------
-        graph1 : a Graph object
-        graph2 : a Graph object
-        Returns
-        -------
-        The Wasserstein distance between the features of graph1 and graph2
-        """
+#     def graph_d(self,graph1,graph2,t1masses,t2masses):
+#         """ Compute the Wasserstein distance between two graphs. Uniform weights are used.        
+#         Parameters
+#         ----------
+#         graph1 : a Graph object
+#         graph2 : a Graph object
+#         Returns
+#         -------
+#         The Wasserstein distance between the features of graph1 and graph2
+#         """
 
-        nodes1=graph1.nodes()  # nodes of two graphs
-        nodes2=graph2.nodes()
-        # t1masses = np.ones(len(nodes1))/len(nodes1)  # uniform weights
-        # t2masses = np.ones(len(nodes2))/len(nodes2)
-        x1=self.reshaper(graph1.all_matrix_attr())
-        x2=self.reshaper(graph2.all_matrix_attr())
+#         nodes1=graph1.nodes()  # nodes of two graphs
+#         nodes2=graph2.nodes()
+#         # t1masses = np.ones(len(nodes1))/len(nodes1)  # uniform weights
+#         # t2masses = np.ones(len(nodes2))/len(nodes2)
+#         x1=self.reshaper(graph1.all_matrix_attr())
+#         x2=self.reshaper(graph2.all_matrix_attr())
 
-        if self.features_metric=='dirac':
-            # f=lambda x,y: x!=y   # x not equal to y
-            f=lambda x,y: int(x!=y)   # x not equal to y
-            M=ot.dist(x1,x2,metric=f)
-        else:
-            M=ot.dist(x1,x2,metric=self.features_metric) 
-        if np.max(M)!=0:
-            M= M/np.max(M)
-        self.M=M
+#         if self.features_metric=='dirac':
+#             # f=lambda x,y: x!=y   # x not equal to y
+#             f=lambda x,y: int(x!=y)   # x not equal to y
+#             M=ot.dist(x1,x2,metric=f)
+#         else:
+#             M=ot.dist(x1,x2,metric=self.features_metric) 
+#         if np.max(M)!=0:
+#             M= M/np.max(M)
+#         self.M=M
 
-        transp = ot.emd(t1masses,t2masses, M)
-        self.transp=transp
+#         transp = ot.emd(t1masses,t2masses, M)
+#         self.transp=transp
 
-        return np.sum(transp*M), transp
+#         return np.sum(transp*M), transp
 
-    def get_tuning_params(self):
-        return {"features_metric":self.features_metric}
+#     def get_tuning_params(self):
+#         return {"features_metric":self.features_metric}
 
 
 
@@ -196,6 +196,8 @@ class Fused_Gromov_Wasserstein_distance():
         else:
             M=np.zeros((C1.shape[0],C2.shape[0]))
 
+        M[:,-1] = 0 # set the last col to be 0
+        
         startdist=time.time()
         transpwgw,log=self.calc_fgw(M,C1,C2,C2_nodummy,t1masses,t2masses,p2_nodummy) #return the transport matrix and FGWD value
         enddist=time.time()
@@ -207,7 +209,7 @@ class Fused_Gromov_Wasserstein_distance():
         self.log=log
 
         # return log['loss','delta_fval','gradient', 'descent'][::-1][0],transpwgw  # the loss value in the last iteration is the returned value
-        return log['loss'][::-1][0],log,transpwgw
+        return log['loss'][::-1][0],log,transpwgw,M,C1,C2
 
     def get_tuning_params(self):
         """Parameters that defined the FGW distance """

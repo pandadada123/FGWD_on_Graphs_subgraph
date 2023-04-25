@@ -194,8 +194,7 @@ def gwloss(constC,hC1,hC2,T):
     tens=np.append(tens,  np.zeros([len(tens),1]),  axis=1)  # add a zero column 
                
     return np.sum(tens*T) 
-    # return np.sum( tens * T)   + 0.01 * np.sum(np.log(T)*T) 
-
+    # return np.sum( tens * T)   + 0.01 * np.sum(np.log(T)*T)
 
 def gwggrad(constC,hC1,hC2,T):
     
@@ -230,7 +229,6 @@ def gwggrad(constC,hC1,hC2,T):
     
     return 2*tens
     # return 2*tens+ 0.01 * (  np.log(T)+np.ones(np.shape(T))  )
-
 
 def fgw_lp(M,C1,C2,C2_nodummy,p,q,q_nodummy,loss_fun='square_loss',alpha=1,amijo=True,G0=None,**kwargs): 
     """
