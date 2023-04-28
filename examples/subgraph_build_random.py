@@ -23,7 +23,7 @@ import ot
 N = 5 # nodes in subgraph
 # N2 = 20 # additional nodes in large graph
 NN2 =[5,10,20,40,60]
-# NN2=[5]
+# NN2=[10]
 DFGW_set = []
 Percent=[]
 Mean=[]
@@ -104,10 +104,15 @@ def build_G1(G,N=30,mu=0,sigma=0.3,pw=0.8):
 
 #%% build a fully connected graph (also the subgraph)
 mu1=2
-# np.random.seed(12)  # different graph with different seed
-G11=build_fully_graph(N=N,mu=mu1,sigma=0.01)
+# G11=build_fully_graph(N=N,mu=mu1,sigma=0.01)
 # G11 = build_star_graph()
 # G11=build_comunity_graph(N=N,mu=mu1,sigma=2, pw=0.5) 
+
+#%% build a random subgraoh
+G0 = Graph() # an empty graph
+np.random.seed(12)  # different graph with different seed -> same subgraph everytime
+G11 = build_G1(G0, N=N, mu=mu1, sigma = 2, pw = 0.5) # set pw = 1 to build a fully-conn graph
+
 #%%
         
 for N2 in NN2:
@@ -147,11 +152,12 @@ for N2 in NN2:
         # G1=Graph(g1)
         
         #%% build G1
+        np.random.seed() # different graph G1 every time
         G12=copy.deepcopy(G11) #initialize with subgraph
         # G111=build_G1(G12,N=N2,mu=1,sigma=8,pw=0.1)
         # G112=build_G1(G12,N=N2,mu=1,sigma=8,pw=0.1)
         # G1 = Graph(merge_graph(G111.nx_graph,G112.nx_graph))
-        G1=build_G1(G12,N=N2,mu=2,sigma=3,pw=0.5)
+        G1=build_G1(G12,N=N2,mu=2,sigma=0.1,pw=0.5)
         
         # check if all nodes in G1 are connected
         # temp=G1.nx_graph._adj
@@ -214,7 +220,7 @@ for N2 in NN2:
         # plt.show()
         
         # FGWD
-        alpha=0.2
+        alpha=0.5
         dfgw,log_FGWD,transp_FGWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=alpha,features_metric=fea_metric,method='shortest_path',loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
         # fig=plt.figure(figsize=(10,8))
         # plt.title('FGWD coupling')
