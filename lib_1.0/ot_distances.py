@@ -5,6 +5,8 @@ import time
 from graph import NoAttrMatrix
 from utils import hamming_dist
 import networkx as nx
+import sys
+
 """
 The following classes adapt the OT distances to Graph objects
 """
@@ -142,28 +144,48 @@ class Fused_Gromov_Wasserstein_distance():
         n1=len(nodes1)
         n2=len(nodes2)
         
+        #%% Calculate the shortest path distance matrix 
+        # LargeValue = sys.float_info.max
+        LargeValue = 1e6
+        def shortest(G):
+            n = len (G.nodes())
+            C = np.zeros ([n,n])
+            for i in range(n):
+                for ii in range(n):  
+                    try:
+                        C[i][ii]=nx.shortest_path_length(G.nx_graph,source=i,target=ii)
+                    except: 
+                        C[i][ii]=LargeValue
+            return C
+        
         # C1=graph1.distance_matrix(method=self.method)
-        C1 = np.zeros ([n1,n1])
-        for i in range(n1):
-            for ii in range(n1):  
-                C1[i][ii] = nx.shortest_path_length(graph1.nx_graph,source=i,target=ii)
+        # C1 = np.zeros ([n1,n1])
+        # for i in range(n1):
+        #     for ii in range(n1):  
+        #         C1[i][ii] = nx.shortest_path_length(graph1.nx_graph,source=i,target=ii)
                 
         
         # C2=graph2.distance_matrix(method=self.method)
-        C2_nodummy = np.zeros ([n2-1,n2-1])
-        for j in range(n2-1):
-            for jj in range(n2-1):  
-                C2_nodummy[j][jj] = nx.shortest_path_length(graph2.nx_graph,source=j,target=jj)
+        # C2_nodummy = np.zeros ([n2-1,n2-1])
+        # for j in range(n2-1):
+        #     for jj in range(n2-1):  
+        #         C2_nodummy[j][jj] = nx.shortest_path_length(graph2.nx_graph,source=j,target=jj)
         
         # C2_shape=np.shape(C2)        
         # C2_nodummy=C2[:,0:C2_shape[1]-1]
         # C2_nodummy=C2_nodummy[0:C2_shape[0]-1,:]
         
-        C2_temp=np.append(C2_nodummy,100*np.ones([n2-1,1]),axis=1)
-        C2=np.append(C2_temp,100*np.ones([1,n2]),axis=0)
-        C2[n2-1,n2-1]=0
+        # C2_temp=np.append(C2_nodummy,100*np.ones([n2-1,1]),axis=1)
+        # C2=np.append(C2_temp,100*np.ones([1,n2]),axis=0)
+        # C2[n2-1,n2-1]=0
 
+        C1 = shortest(graph1)
+        C2 = shortest(graph2)
         
+        C2_nodummy=C2[:,0:n2-1]
+        C2_nodummy=C2_nodummy[0:n2-1,:]
+        
+        #%%
         end2=time.time()
         # t1masses = np.ones(len(nodes1))/len(nodes1)
         # t2masses = np.ones(len(nodes2))/len(nodes2)  # uniform weights
