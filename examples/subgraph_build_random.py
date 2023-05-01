@@ -23,16 +23,20 @@ import ot
 N = 5 # nodes in subgraph
 N2 = 20 # additional nodes in large graph
 # NN2 =[5,10,20,40,60]
-# NN2=[20]
+# NN2 =[20]
 # Pw1 =  [0.3, 0.5, 0.7, 0.9,1] 
 # Pw2 = [0.1, 0.3, 0.5, 0.7, 0.9,1]
 pw2=0.5
 pw1=0.5
 # pw2=0.5
-Sigma2=[0.01,0.1,0.5,1,2,3,4] 
+# Sigma2=[0.01,0.1,0.5,1,2,3,4] 
+# Sigma2=[0.01]
 sigma1=0.1
-# sigma2=0.1
+sigma2=0.1
 # Alpha = np.linspace(0, 1, 11)
+
+# N_dum = 1
+NN_dum = [1,2,3,4,5]
 
 DFGW_set = []
 Percent=[]
@@ -115,8 +119,8 @@ def build_G1(G,N=30,mu=0,sigma=0.3,pw=0.8):
 
 #%%
         
-for sigma2 in Sigma2:
-    Num = 1
+for N_dum in NN_dum:
+    Num = 500
     num = 0
     yes = 0
     DFGW= np.zeros(Num)
@@ -179,7 +183,11 @@ for sigma2 in Sigma2:
         G2_nodummy=copy.deepcopy(G11)
         # G2_nodummy=build_fully_graph(N=25,mu=mu1,sigma=0.3)
         G2=copy.deepcopy(G2_nodummy)
-        G2.add_attributes({len(G2.nodes()): 0 })  # add dummy 
+        # G2.add_attributes({len(G2.nodes()): 0 })  # add dummy 
+        i=0
+        while i<N_dum:
+            G2.add_attributes({len(G2.nodes()): 0 })
+            i+=1
         
         #%%  The followings are fixed
         g1 = G1.nx_graph
@@ -207,8 +215,10 @@ for sigma2 in Sigma2:
         #%% weights and feature metric
         p1=ot.unif(len(G1.nodes()))
         p2_nodummy=1/len(G1.nodes()) * np.ones([len(G2_nodummy.nodes())])    # ACTUALLY NOT USED IN THE ALGORITHM
-        p2=np.append(p2_nodummy,1-sum(p2_nodummy))
-        
+        # p2=np.append(p2_nodummy,1-sum(p2_nodummy))
+        p2=np.append(p2_nodummy,
+                     np.matlib.repmat(  (1-sum(p2_nodummy))/N_dum  , 1, N_dum)
+                     )
         fea_metric = 'dirac'
         # fea_metric = 'hamming'
         # fea_metric = 'sqeuclidean'
@@ -216,14 +226,14 @@ for sigma2 in Sigma2:
         #%% use the function from FGWD all the time
         thresh=0.004
         # WD
-        dw,log_WD,transp_WD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=0,features_metric=fea_metric,method='shortest_path',loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
+        dw,log_WD,transp_WD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=0,features_metric=fea_metric,method='shortest_path',loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy,N_dum)
         # fig=plt.figure(figsize=(10,8))
         # plt.title('WD coupling')
         # draw_transp(G1,G2,transp_WD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
         # plt.show()
         
         # GWD
-        dgw,log_GWD,transp_GWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=1,features_metric=fea_metric,method='shortest_path',loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
+        dgw,log_GWD,transp_GWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=1,features_metric=fea_metric,method='shortest_path',loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy,N_dum)
         # fig=plt.figure(figsize=(10,8))
         # plt.title('GWD coupling')
         # draw_transp(G1,G2,transp_GWD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
@@ -231,7 +241,7 @@ for sigma2 in Sigma2:
         
         # FGWD
         alpha=0.5
-        dfgw,log_FGWD,transp_FGWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=alpha,features_metric=fea_metric,method='shortest_path',loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
+        dfgw,log_FGWD,transp_FGWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=alpha,features_metric=fea_metric,method='shortest_path',loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy,N_dum)
         # fig=plt.figure(figsize=(10,8))
         # plt.title('FGWD coupling')
         # draw_transp(G1,G2,transp_FGWD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
@@ -288,9 +298,9 @@ ax.set_title('Hide Outlier Points')
 ax.boxplot(DFGW_set, showfliers=False, showmeans=False)
 #%% plot mean and STD
 plt.figure()
-plt.plot(np.array(Sigma2), np.array(Mean), 'k-')
-plt.fill_between(np.array(Sigma2), np.array(Mean)-np.array(STD), np.array(Mean)+np.array(STD))
+plt.plot(np.array(NN_dum), np.array(Mean), 'k-')
+plt.fill_between(np.array(NN_dum), np.array(Mean)-np.array(STD), np.array(Mean)+np.array(STD))
 #%% plot percentage
 plt.figure()
-plt.plot(np.array(Sigma2),np.array(Percent))
+plt.plot(np.array(NN_dum),np.array(Percent))
 plt.grid()

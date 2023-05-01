@@ -162,7 +162,7 @@ def tensor_product(constC,hC1,hC2,T):
 
     return tens
 
-def gwloss(constC,hC1,hC2,T):
+def gwloss(constC,hC1,hC2,T,N_dum):
 
     """ Return the Loss for Gromov-Wasserstein
     The loss is computed as described in Proposition 1 Eq. (6) in [1].
@@ -187,16 +187,19 @@ def gwloss(constC,hC1,hC2,T):
     International Conference on Machine Learning (ICML). 2016.
     """
     
-    T_nodummy = T[:,0:len(T[0])-1]  
+    T_nodummy = T[:,0:len(T[0])-N_dum]  
     
     tens=tensor_product(constC,hC1,hC2,T_nodummy) 
     
-    tens=np.append(tens,  np.zeros([len(tens),1]),  axis=1)  # add a zero column 
+    # tens=np.append(tens,  np.zeros([len(tens),1]),  axis=1)  # add a zero column 
+    tens=np.append(tens,  
+                   np.matlib.repmat(np.zeros([len(tens),1])  ,1 , N_dum),  
+                   axis=1)  # add N_dum zero columns
                
     return np.sum(tens*T) 
     # return np.sum( tens * T)   + 0.01 * np.sum(np.log(T)*T)
 
-def gwggrad(constC,hC1,hC2,T):
+def gwggrad(constC,hC1,hC2,T,N_dum):
     
     """ Return the gradient for Gromov-Wasserstein
     The gradient is computed as described in Proposition 2 in [1].
@@ -221,16 +224,20 @@ def gwggrad(constC,hC1,hC2,T):
     International Conference on Machine Learning (ICML). 2016.
     """
     
-    T_nodummy = T[:,0:len(T[0])-1]  
+    T_nodummy = T[:,0:len(T[0])-N_dum]  
     
     tens=tensor_product(constC,hC1,hC2,T_nodummy) 
     
-    tens=np.append(tens,  np.zeros([len(tens),1]),  axis=1)  # add a zero column 
+    # tens=np.append(tens,  np.zeros([len(tens),1]),  axis=1)  # add a zero column 
+    tens=np.append(tens,  
+                   np.matlib.repmat(np.zeros([len(tens),1]) , 1, N_dum),  
+                   axis=1)
     
     return 2*tens
     # return 2*tens+ 0.01 * (  np.log(T)+np.ones(np.shape(T))  )
 
-def fgw_lp(M,C1,C2,C2_nodummy,p,q,q_nodummy,loss_fun='square_loss',alpha=1,amijo=True,G0=None,**kwargs): 
+def fgw_lp(M,C1,C2,C2_nodummy,p,q,q_nodummy,N_dum,
+           loss_fun='square_loss',alpha=1,amijo=True,G0=None,**kwargs): 
     """
     Computes the FGW distance between two graphs see [3]
     .. math::
@@ -346,16 +353,16 @@ def fgw_lp(M,C1,C2,C2_nodummy,p,q,q_nodummy,loss_fun='square_loss',alpha=1,amijo
 
    #%% trick by Peyre and partial aligment
     def f(G):  # objective function of GWD
-        G_nodummy = G[:,0:len(G[0])-1]  
+        G_nodummy = G[:,0:len(G[0])-N_dum]  
         constC,hC1,hC2=init_matrix(C1,C2_nodummy,G_nodummy,p,q_nodummy,loss_fun)        
 
-        return gwloss(constC,hC1,hC2,G)
+        return gwloss(constC,hC1,hC2,G,N_dum)
     
     def df(G): # gradient of GWD
-        G_nodummy = G[:,0:len(G[0])-1]  
+        G_nodummy = G[:,0:len(G[0])-N_dum]  
         constC,hC1,hC2=init_matrix(C1,C2_nodummy,G_nodummy,p,q_nodummy,loss_fun)        
 
-        return gwggrad(constC,hC1,hC2,G)
+        return gwggrad(constC,hC1,hC2,G,N_dum)
     
     # return optim.cg(p,q,M,alpha,f,df,G0,amijo=amijo,C1=C1,C2=C2,constC=constC,**kwargs) # for GWD, alpha = reg=1, M=0
     # constC is not used in optim process
