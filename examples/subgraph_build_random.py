@@ -120,7 +120,7 @@ def build_G1(G,N=30,mu=0,sigma=0.3,pw=0.8):
 #%%
         
 for N_dum in NN_dum:
-    Num = 500
+    Num = 1
     num = 0
     yes = 0
     DFGW= np.zeros(Num)
@@ -242,10 +242,11 @@ for N_dum in NN_dum:
         # FGWD
         alpha=0.5
         dfgw,log_FGWD,transp_FGWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=alpha,features_metric=fea_metric,method='shortest_path',loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy,N_dum)
-        # fig=plt.figure(figsize=(10,8))
-        # plt.title('FGWD coupling')
-        # draw_transp(G1,G2,transp_FGWD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
-        # plt.show()
+        fig=plt.figure(figsize=(10,8))
+        plt.title('FGWD coupling')
+        draw_transp(G1,G2,transp_FGWD,N_dum,
+                    shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
+        plt.show()
         
         #%% FGWD, find alpha
         # alld=[]
