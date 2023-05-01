@@ -21,7 +21,7 @@ import networkx as nx
 import ot
 
 N = 5 # nodes in subgraph
-N2 = 60 # additional nodes in large graph
+N2 = 20 # additional nodes in large graph
 # NN2 =[5,10,20,40,60]
 # NN2=[20]
 # Pw1 =  [0.3, 0.5, 0.7, 0.9,1] 
@@ -116,7 +116,7 @@ def build_G1(G,N=30,mu=0,sigma=0.3,pw=0.8):
 #%%
         
 for sigma2 in Sigma2:
-    Num = 500
+    Num = 1
     num = 0
     yes = 0
     DFGW= np.zeros(Num)
@@ -179,7 +179,7 @@ for sigma2 in Sigma2:
         G2_nodummy=copy.deepcopy(G11)
         # G2_nodummy=build_fully_graph(N=25,mu=mu1,sigma=0.3)
         G2=copy.deepcopy(G2_nodummy)
-        G2.add_attributes({len(G2.nodes())+1 : 0 })  # add dummy 
+        G2.add_attributes({len(G2.nodes()): 0 })  # add dummy 
         
         #%%  The followings are fixed
         g1 = G1.nx_graph
