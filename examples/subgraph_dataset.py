@@ -28,7 +28,6 @@ import ot
 
 kg.delete_cached_files()
 
-# pathway1 = kg.KEGGpathway(pathway_id = "hsa05215")  # API for KEGG, "pathway type + index"
 P1 = kg.KEGGpathway(pathway_id = "hsa05224")  # API for KEGG, "pathway type + index"
 
 # print(pathway.title)
@@ -44,7 +43,7 @@ P1 = kg.KEGGpathway(pathway_id = "hsa05224")  # API for KEGG, "pathway type + in
 
 # pathway1.draw()
 
-P2_nodummy = kg.KEGGpathway(pathway_id = "hsa04012")
+# P2_nodummy = kg.KEGGpathway(pathway_id = "hsa04012")
 # pathway2.draw()
 
 
@@ -53,12 +52,21 @@ def KEGGpathwayToGraph(P):
     Nodes=P.nodes()
     G=Graph()
     for node in Nodes:
-        feature = P._node[node]['label']
-        G.add_attributes({node : feature})
-        edges = P._adj[node].keys()
-        for edge in edges:
-            G.add_edge((node,edge))
-        
+        if '_' in node:
+            continue
+        else:
+            feature = P._node[node]['label']
+            G.add_attributes({node : feature})
+            # G.add_attributes({i : feature})
+            edges = P._adj[node].keys()
+            for edge in edges:
+                if '_' in edge:
+                    continue
+                else:
+                    G.add_edge((node,edge))
+                    # G.add_edge((i,edge))
+    # change the keys to numbers
+    
     return G
         
     
@@ -70,8 +78,18 @@ def KEGGpathwayToGraph(P):
 # G2_nodummy = copy.deepcopy(P2_nodummy)
 # G2 = copy.deepcopy(P2)
 
+#%% build a subgraph
+G2_nodummy = Graph()
+G2_nodummy.add_attributes({'0':'HRAS',
+                  '1':'ARAF',
+                  '2':'MEK1',
+                  '3':'ERK'})
+G2_nodummy.add_edge(('0','1'))
+G2_nodummy.add_edge(('1','2'))
+G2_nodummy.add_edge(('2','3'))
+#%%
 G1=KEGGpathwayToGraph(P1)
-G2_nodummy=KEGGpathwayToGraph(P2_nodummy)
+# G2_nodummy=KEGGpathwayToGraph(P2_nodummy)
 G2=copy.deepcopy(G2_nodummy)
 G2.add_attributes({len(G2.nodes()): '0' })  # add dummy 
 
@@ -89,7 +107,7 @@ vmin=0
 vmax=9  # the range of color
 thresh=0.004
 # FGWD
-alpha=0
+alpha=0.2
 dfgw,log_FGWD,transp_FGWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=alpha,features_metric=fea_metric,method='shortest_path',loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
 # fig=plt.figure()
 # plt.title('FGWD coupling')

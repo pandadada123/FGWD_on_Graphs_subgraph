@@ -215,6 +215,8 @@ class Fused_Gromov_Wasserstein_distance():
                     for j in range(n2):
                         f1 = nodes1[keys1[i]] ['attr_name']
                         f2 = nodes2[keys2[j]] ['attr_name']
+                        f1 = f1.replace(' ','')
+                        f2 = f2.replace(' ','')
                         a = f1.split(',')
                         b = f2.split(',')
                         x=[k for k in a if k in b]
