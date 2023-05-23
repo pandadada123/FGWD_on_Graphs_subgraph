@@ -27,81 +27,81 @@ import ot
    g is nx_graph
 '''
 #%% 
-# G11=Graph() # community 1
-# G11.add_attributes({0:1,1:7,2:5,3:3,4:9})    # add color to nodes
-# G11.add_edge((0,1))
-# G11.add_edge((1,2))
-# G11.add_edge((2,3))
-# G11.add_edge((3,4))
-# G11.add_edge((4,0))
-# # g1.add_edge((0,2))
-# # g1.add_edge((1,3))
-# G11.add_edge((0,2))
-# G11.add_edge((0,3))
-# G11.add_edge((2,4))
-# G11.add_edge((1,3))
-# G11.add_edge((1,4))
-
-# G12=Graph() # community 2
-# G12.add_attributes({0:1,1:7,2:5,3:3,4:9})
-# G12.add_edge((0,3))
-# G12.add_edge((1,3))
-# G12.add_edge((2,3))
-# G12.add_edge((4,3))
-
-# # N=5 # five different colors/nodes in each subgra
-# # mu1=-1.5
-# # mu2=1.5
-# vmin=0
-# vmax=9  # the range of color
-# # np.random.seed(12)
-# # g1=build_comunity_graph(N=N,mu=mu1,sigma=0.8,pw=0.5)
-# # g2=build_comunity_graph(N=N,mu=mu2,sigma=0.8,pw=0.5)
-
-
-# def merge_graph(g1,g2):  # inputs are nx_graph
-#     gprime=nx.Graph(g1)
-#     N0=len(gprime.nodes())
-#     g2relabel=nx.relabel_nodes(g2, lambda x: x +N0)
-#     gprime.add_nodes_from(g2relabel.nodes(data=True))
-#     gprime.add_edges_from(g2relabel.edges(data=True)) 
-#     gprime.add_edge(N0-1,N0)
-    
-#     return gprime
-
-# G1 = Graph ( merge_graph(G11.nx_graph,G12.nx_graph) )  # Graph including 2 communities
-# G2_nodummy = copy.deepcopy(G11) # version without dummy node
-# G2 = copy.deepcopy(G11)
-# G2.add_attributes({5:1}) # add a dummy node to G2
-
-#%% example from SAGA
 G11=Graph() # community 1
-G11.add_attributes({0:0,1:1,2:2,3:3,4:4,5:5})    # add color to nodes
+G11.add_attributes({0:1,1:7,2:5,3:3,4:9})    # add color to nodes
 G11.add_edge((0,1))
 G11.add_edge((1,2))
 G11.add_edge((2,3))
+G11.add_edge((3,4))
+G11.add_edge((4,0))
+# g1.add_edge((0,2))
+# g1.add_edge((1,3))
+G11.add_edge((0,2))
+G11.add_edge((0,3))
 G11.add_edge((2,4))
-G11.add_edge((2,5))
+G11.add_edge((1,3))
+G11.add_edge((1,4))
 
 G12=Graph() # community 2
-G12.add_attributes({0:2,1:3,2:4,3:5,4:6,5:7})
+G12.add_attributes({0:1,1:7,2:5,3:3,4:9})
 G12.add_edge((0,3))
-G12.add_edge((0,4))
-G12.add_edge((4,5))
+G12.add_edge((1,3))
+G12.add_edge((2,3))
 G12.add_edge((4,3))
-G12.add_edge((2,5))
-G12.add_edge((1,5))
-
-G1 = copy.deepcopy(G11)
-G2_nodummy = copy.deepcopy(G12)
-G2 = copy.deepcopy(G2_nodummy)
-G2.add_attributes({100:0}) # add a dummy node to G2
 
 # N=5 # five different colors/nodes in each subgra
 # mu1=-1.5
 # mu2=1.5
 vmin=0
 vmax=9  # the range of color
+# np.random.seed(12)
+# g1=build_comunity_graph(N=N,mu=mu1,sigma=0.8,pw=0.5)
+# g2=build_comunity_graph(N=N,mu=mu2,sigma=0.8,pw=0.5)
+
+
+def merge_graph(g1,g2):  # inputs are nx_graph
+    gprime=nx.Graph(g1)
+    N0=len(gprime.nodes())
+    g2relabel=nx.relabel_nodes(g2, lambda x: x +N0)
+    gprime.add_nodes_from(g2relabel.nodes(data=True))
+    gprime.add_edges_from(g2relabel.edges(data=True)) 
+    gprime.add_edge(N0-1,N0)
+    
+    return gprime
+
+G1 = Graph ( merge_graph(G11.nx_graph,G12.nx_graph) )  # Graph including 2 communities
+G2_nodummy = copy.deepcopy(G11) # version without dummy node
+G2 = copy.deepcopy(G11)
+G2.add_attributes({5:1}) # add a dummy node to G2
+
+#%% example from SAGA
+# G11=Graph() # community 1
+# G11.add_attributes({0:0,1:1,2:2,3:3,4:4,5:5})    # add color to nodes
+# G11.add_edge((0,1))
+# G11.add_edge((1,2))
+# G11.add_edge((2,3))
+# G11.add_edge((2,4))
+# G11.add_edge((2,5))
+
+# G12=Graph() # community 2
+# G12.add_attributes({0:2,1:3,2:4,3:5,4:6,5:7})
+# G12.add_edge((0,3))
+# G12.add_edge((0,4))
+# G12.add_edge((4,5))
+# G12.add_edge((4,3))
+# G12.add_edge((2,5))
+# G12.add_edge((1,5))
+
+# G1 = copy.deepcopy(G11)
+# G2_nodummy = copy.deepcopy(G12)
+# G2 = copy.deepcopy(G2_nodummy)
+# G2.add_attributes({100:0}) # add a dummy node to G2
+
+# # N=5 # five different colors/nodes in each subgra
+# # mu1=-1.5
+# # mu2=1.5
+# vmin=0
+# vmax=9  # the range of color
 
 #%%  The followings are fixed
 g1 = G1.nx_graph
