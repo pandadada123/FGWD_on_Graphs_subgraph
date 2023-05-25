@@ -147,13 +147,28 @@ class Fused_Gromov_Wasserstein_distance():
         #%% Calculate the shortest path distance matrix 
         # LargeValue = sys.float_info.max
         LargeValue = 1e6
+        
+        # def shortest(G):
+        #     n = len (G.nodes())
+        #     C = np.zeros ([n,n])
+        #     for i in range(n):
+        #         for ii in range(n):  
+        #             try:
+        #                 C[i][ii]=nx.shortest_path_length(G.nx_graph,source=i,target=ii)
+        #             except: 
+        #                 C[i][ii]=LargeValue
+        #     return C
+        
         def shortest(G):
+            Keys = sorted(G.nodes().keys())
             n = len (G.nodes())
-            C = np.zeros ([n,n])
+            C = np.zeros([n,n])
             for i in range(n):
-                for ii in range(n):  
+                for ii in range(n):
+                    key1 = Keys[i]
+                    key2 = Keys[ii]
                     try:
-                        C[i][ii]=nx.shortest_path_length(G.nx_graph,source=i,target=ii)
+                        C[i][ii]=nx.shortest_path_length(G.nx_graph,source=key1,target=key2)
                     except: 
                         C[i][ii]=LargeValue
             return C
@@ -189,32 +204,68 @@ class Fused_Gromov_Wasserstein_distance():
         end2=time.time()
         # t1masses = np.ones(len(nodes1))/len(nodes1)
         # t2masses = np.ones(len(nodes2))/len(nodes2)  # uniform weights
-        try :
-            x1=self.reshaper(graph1.all_matrix_attr())
-            x2=self.reshaper(graph2.all_matrix_attr())
-        except NoAttrMatrix:
-            x1=None
-            x2=None
-            gofeature=False
+        # try :
+        #     x1=self.reshaper(graph1.all_matrix_attr())
+        #     x2=self.reshaper(graph2.all_matrix_attr())
+        # except NoAttrMatrix:
+        #     x1=None
+        #     x2=None
+        #     gofeature=False
+        
+        Keys1 = sorted(graph1.nodes().keys())
+        Keys2 = sorted(graph2.nodes().keys())
+        
         if gofeature : 
+            M=np.zeros((C1.shape[0],C2.shape[0])) # initialization
+            
             if self.features_metric=='dirac': # (does not work) Dirac is the same as hamming_dist for scalar comparison
                 # f=lambda x,y: x!=y
-                f=lambda x,y: int(x!=y)
-                M=ot.dist(x1,x2,metric=f)
+                # f=lambda x,y: int(x!=y)
+                # M=ot.dist(x1,x2,metric=f)
+                
+                for i in range(n1):
+                    for j in range(n2):    
+                        key1 = Keys1[i]
+                        key2 = Keys2[j] 
+                        f1 = nodes1[key1]['attr_name']
+                        f2 = nodes2[key2]['attr_name']
+                        if f1==f2:
+                            M[i,j]=0
+                        else:
+                            M[i,j]=1
+                    
             elif self.features_metric=='hamming': #see experimental setup in the original paper
                 # f=lambda x,y: hamming_dist(x,y)
                 # M=ot.dist(x1,x2,metric=f)
-                M=ot.dist(x1,x2,metric='hamming')
+                # M=ot.dist(x1,x2,metric='hamming')
+                for i in range(n1):
+                    for j in range(n2):
+                        key1 = Keys1[i]
+                        key2 = Keys2[j] 
+                        f1 = np.array( nodes1[key1]['attr_name'] )
+                        f2 = np.array( nodes2[key2]['attr_name'] )
+                        if f1.shape != f2.shape:
+                            M[i,j] = LargeValue
+                        else: 
+                            M[i,j] = np.count_nonzero(f1 != f2)
+                            
             elif self.features_metric=='sqeuclidean':
-                M=np.zeros((C1.shape[0],C2.shape[0]))
-                for i in range(C1.shape[0]):
-                    for j in range(C2.shape[0]):  
-                          M[i][j]=sum(pow(x1[i,:]-x2[j,:] ,2))
+                for i in range(n1):
+                    for j in range(n2):
+                        key1 = Keys1[i]
+                        key2 = Keys2[j] 
+                        f1 = np.array( nodes1[key1]['attr_name'] )
+                        f2 = np.array( nodes2[key2]['attr_name'] )
+                        if f1.shape != f2.shape:
+                            M[i,j] = LargeValue
+                        else: 
+                            M[i][j]=sum(pow(f1-f2 ,2))
+                        
                 
-            else:
-                M=ot.dist(x1,x2,metric=self.features_metric)
+            # else:
+                # M=ot.dist(x1,x2,metric=self.features_metric)
                 
-            self.M=M
+            # self.M=M
         else:
             M=np.zeros((C1.shape[0],C2.shape[0]))
 

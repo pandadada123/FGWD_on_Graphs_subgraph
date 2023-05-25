@@ -431,17 +431,26 @@ def draw_transp(G1,G2,transp,shiftx=1,shifty=0,thresh=0.09,swipy=False,swipx=Fal
     #                      , [pos1[k1][1], pos2[k2][1]], 'r--'
     #                      , alpha=transp[invd1[k1],invd2[k2]]/np.max(transp),lw=2)
     
+    Keys1 = sorted(G1.nodes().keys())
+    Keys2 = sorted(G2.nodes().keys())
     for k1,v1 in pos1.items():
          for k2,v2 in pos2.items():
-             if (transp[invd1[k1],invd2[k2]]>thresh):
-                 if (k2 == list(pos2)[-1]):
+             K1=Keys1.index(k1)
+             K2=Keys2.index(k2)
+              # if (transp[invd1[k1],invd2[k2]]>thresh):
+             if (transp[K1,K2]>thresh):
+                 # if (k2 == list(pos2)[-1]):
+                 if k2==Keys2[-1]:
                      # plt.plot([pos1[k1][0], pos2[k2][0]]
                      #      , [pos1[k1][1], pos2[k2][1]], 'k--'
                      #      , alpha=transp[invd1[k1],invd2[k2]]/np.max(transp),lw=2)
                      continue
                  else:
-                     plt.plot([pos1[k1][0], pos2[k2][0]]
-                          , [pos1[k1][1], pos2[k2][1]], 'r-'
-                          , alpha=transp[invd1[k1],invd2[k2]]/np.max(transp),lw=2)
+                      # plt.plot([pos1[k1][0], pos2[k2][0]]
+                      #      , [pos1[k1][1], pos2[k2][1]], 'r-'
+                      #      , alpha=transp[invd1[k1],invd2[k2]]/np.max(transp),lw=2by)
+                      plt.plot([pos1[k1][0], pos2[k2][0]]
+                           , [pos1[k1][1], pos2[k2][1]], 'r-'
+                           , alpha=transp[K1,K2]/np.max(transp),lw=2)
 
 
