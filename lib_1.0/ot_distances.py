@@ -197,8 +197,9 @@ class Fused_Gromov_Wasserstein_distance():
         C1 = shortest(graph1)
         C2 = shortest(graph2)
         
-        C2_nodummy=C2[:,0:n2-1]
-        C2_nodummy=C2_nodummy[0:n2-1,:]
+        # C2_nodummy=C2[:,0:n2-1]
+        # C2_nodummy=C2_nodummy[0:n2-1,:]
+        C2_nodummy=C2[0:n2-1,0:n2-1]
         
         #%%
         end2=time.time()

@@ -208,7 +208,7 @@ class Fused_Gromov_Wasserstein_distance():
                 # f=lambda x,y: int(x!=y)
                 # M=ot.dist(x1,x2,metric=f)
                 
-                # for KEGG            
+                # for KEGG (only use dirac) 
                 keys1 = list(nodes1.keys())
                 keys2 = list(nodes2.keys())
                 for i in range(n1):
@@ -225,15 +225,15 @@ class Fused_Gromov_Wasserstein_distance():
                         else:
                             M[i,j] = 0
                 
-            elif self.features_metric=='hamming': #see experimental setup in the original paper
-                # f=lambda x,y: hamming_dist(x,y)
-                # M=ot.dist(x1,x2,metric=f)
-                M=ot.dist(x1,x2,metric='hamming')
-            elif self.features_metric=='sqeuclidean':
-                M=np.zeros((C1.shape[0],C2.shape[0]))
-                for i in range(C1.shape[0]):
-                    for j in range(C2.shape[0]):  
-                          M[i][j]=sum(pow(x1[i,:]-x2[j,:] ,2))
+            # elif self.features_metric=='hamming': #see experimental setup in the original paper
+            #     # f=lambda x,y: hamming_dist(x,y)
+            #     # M=ot.dist(x1,x2,metric=f)
+            #     M=ot.dist(x1,x2,metric='hamming')
+            # elif self.features_metric=='sqeuclidean':
+            #     M=np.zeros((C1.shape[0],C2.shape[0]))
+            #     for i in range(C1.shape[0]):
+            #         for j in range(C2.shape[0]):  
+            #               M[i][j]=sum(pow(x1[i,:]-x2[j,:] ,2))
                 
             else:
                 M=ot.dist(x1,x2,metric=self.features_metric)

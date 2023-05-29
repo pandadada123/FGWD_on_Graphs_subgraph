@@ -128,7 +128,7 @@ vmin=0
 vmax=9  # the range of color
 thresh=0.004
 # FGWD
-alpha=0
+alpha=0.2
 dfgw,log_FGWD,transp_FGWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=alpha,features_metric=fea_metric,method='shortest_path',loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
 # fig=plt.figure()
 # plt.title('FGWD coupling')
@@ -142,7 +142,7 @@ index = index[sort_indices]
 
 # feature
 Features_source = list(g1._node.values())
-print ("Features of subgraph within the large graph:")
+print ("Features of subgraph within the source graph:")
 for source in index[:,0]:  # source is int
     print (Features_source[source])
     
@@ -196,8 +196,12 @@ def generate_adjacency_matrix(graph_dict):
     
     return adjacency_matrix
 
+
 adjacency_subgraph = generate_adjacency_matrix(Structure_source2)
+print("Adjacency matrix within the source graph")
 print(adjacency_subgraph)
+
 adjacency_query = generate_adjacency_matrix(g2_nodummy._adj)
+print("Adjacency matrix of query graph")
 print(adjacency_query)
     

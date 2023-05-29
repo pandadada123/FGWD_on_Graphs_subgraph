@@ -19,9 +19,11 @@ import copy
 import matplotlib.pyplot as plt
 import networkx as nx
 import ot
+import random
+from FGW import init_matrix,gwloss
 
 N = 5 # nodes in subgraph
-N2 = 20 # additional nodes in large graph
+N2 = 5 # additional nodes in large graph
 # NN2 =[5,10,20,40,60]
 # NN2=[20]
 # Pw1 =  [0.3, 0.5, 0.7, 0.9,1] 
@@ -29,9 +31,14 @@ N2 = 20 # additional nodes in large graph
 pw2=0.5
 pw1=0.5
 # pw2=0.5
-Sigma2=[0.01,0.1,0.5,1,2,3,4] 
-sigma1=0.1
+# Sigma2=[0.01,0.1,0.5,1,2,3,4] 
+# Sigma2=[0.01]
+# sigma1=0.1
 # sigma2=0.1
+# numfea = 3
+NumFea = list(range(1,21)) # from 1 to 20
+NumFea = [20]
+
 # Alpha = np.linspace(0, 1, 11)
 
 DFGW_set = []
@@ -50,15 +57,19 @@ def build_star_graph():
     return g
 
 #%% build fully connected graph
-def build_fully_graph(N=30,mu=0,sigma=0.3):
+def build_fully_graph(N=30,numfea=3):
     # v=mu+sigma*np.random.randn(N);
     # v=np.int_(np.floor(v)) # discrete attributes 
     g=Graph()
     g.add_nodes(list(range(N)))
+    # Fea = np.linspace(0,20,numfea)
+    Fea = list(range(0,numfea))
     for i in range(N):
           # g.add_one_attribute(i,v[i])
-          g.add_one_attribute(i,2)
-          for j in range(N):
+          # g.add_one_attribute(i,2)
+          fea = random.choice(Fea)
+          g.add_one_attribute(i,fea)
+          for j in range(i+1, N):
                 if j != i:
                     g.add_edge((i,j))
                     
@@ -66,14 +77,18 @@ def build_fully_graph(N=30,mu=0,sigma=0.3):
 
 #%% build comunity graphs with different assortivity 
 # pw is the possibility that one edge is connected 
-def build_comunity_graph(N=30,mu=0,sigma=0.3,pw=0.8):
-    v=mu+sigma*np.random.randn(N);
-    v=np.int_(np.floor(v)) # discrete attributes 
+def build_comunity_graph(N=30,numfea=3,pw=0.5):
+    # v=mu+sigma*np.random.randn(N);
+    # v=np.int_(np.floor(v)) # discrete attributes 
     g=Graph()
     g.add_nodes(list(range(N)))
+    # Fea = np.linspace(0,20,numfea)
+    Fea = list(range(0,numfea))
     for i in range(N):
-         g.add_one_attribute(i,v[i])
-         for j in range(N):
+         # g.add_one_attribute(i,v[i])
+         fea = random.choice(Fea)
+         g.add_one_attribute(i,fea)
+         for j in range(i+1,N):
              if j != i:
                  r=np.random.rand()
                  if  r<pw:
@@ -93,20 +108,24 @@ def merge_graph(g1,g2):  # inputs are nx_graph
     return gprime
 
 #%% build random graph G1
-def build_G1(G,N=30,mu=0,sigma=0.3,pw=0.8):
-    v=mu+sigma*np.random.randn(N);
-    v=np.int_(np.floor(v)) # discrete attributes 
+def build_G1(G,N2=30,numfea=3,pw=0.5):
+    # v=mu+sigma*np.random.randn(N);
+    # v=np.int_(np.floor(v)) # discrete attributes 
+    # Fea = np.linspace(0,20,numfea)
+    Fea = list(range(0,numfea))
     
     L=len(G.nodes())
-    G.add_nodes(list(range(N)))
+    G.add_nodes(list(range(N2)))
     
-    NN = N+L
+    NN = N2+L
     for i in range(L,NN):
-          G.add_one_attribute(i,v[i-L])
+          # G.add_one_attribute(i,v[i-L])
+          fea = random.choice(Fea)
+          G.add_one_attribute(i,fea)
     for i in range(NN):
-          for j in range(NN):
-                if j != i:
-                    r=np.random.rand()
+          for j in range(i+1,NN):
+                if j != i and j not in range(L):  # no additional edge within the subgraph
+                    r=np.random.rand()  # uniform betweeen [0,1)
                     if  r<pw:
                       G.add_edge((i,j))
                       
@@ -115,8 +134,8 @@ def build_G1(G,N=30,mu=0,sigma=0.3,pw=0.8):
 
 #%%
         
-for sigma2 in Sigma2:
-    Num = 1
+for numfea in NumFea:
+    Num = 1  # number of random graphs 
     num = 0
     yes = 0
     DFGW= np.zeros(Num)
@@ -157,9 +176,10 @@ for sigma2 in Sigma2:
         # G11=build_comunity_graph(N=N,mu=mu1,sigma=2, pw=0.5) 
 
         #%% build a random subgraoh
-        G0 = Graph() # an empty graph
+        # G0 = Graph() # an empty graph
         np.random.seed(12)  # different graph with different seed -> same subgraph everytime
-        G11 = build_G1(G0, N=N, mu=2, sigma = sigma1, pw = pw1) # set pw = 1 to build a fully-conn graph
+        # G11 = build_G1(G0, N=N, numfea = numfea, pw = pw1) # if set pw = 1 to build a fully-conn graph
+        G11 = build_comunity_graph(N=N, numfea = numfea, pw = pw1) # if set pw = 1 to build a fully-conn graph
         
         #%% build G1
         np.random.seed() # different graph G1 every time
@@ -167,7 +187,7 @@ for sigma2 in Sigma2:
         # G111=build_G1(G12,N=N2,mu=1,sigma=8,pw=0.1)
         # G112=build_G1(G12,N=N2,mu=1,sigma=8,pw=0.1)
         # G1 = Graph(merge_graph(G111.nx_graph,G112.nx_graph))
-        G1=build_G1(G12,N=N2,mu=2, sigma=sigma2, pw=pw2)
+        G1=build_G1(G12, N2=N2, numfea = numfea, pw=pw2)
         
         # check if all nodes in G1 are connected
         # temp=G1.nx_graph._adj
@@ -184,6 +204,7 @@ for sigma2 in Sigma2:
         #%%  The followings are fixed
         g1 = G1.nx_graph
         g2 = G2.nx_graph
+        g2_nodummy = G2_nodummy.nx_graph
         
         #%% check if every pair of nodes have path
         # n1 = len(G1.nodes())
@@ -198,11 +219,11 @@ for sigma2 in Sigma2:
         vmin=0
         vmax=9  # the range of color
         
-        # plt.figure(figsize=(8,5))
-        # draw_rel(g1,vmin=vmin,vmax=vmax,with_labels=True,draw=False)
-        # draw_rel(g2,vmin=vmin,vmax=vmax,with_labels=True,shiftx=3,draw=False)
-        # plt.title('Two graphs. Color indicates the label')
-        # plt.show()
+        plt.figure(figsize=(8,5))
+        draw_rel(g1,vmin=vmin,vmax=vmax,with_labels=True,draw=False)
+        draw_rel(g2,vmin=vmin,vmax=vmax,with_labels=True,shiftx=3,draw=False)
+        plt.title('Two graphs. Color indicates the label')
+        plt.show()
         
         #%% weights and feature metric
         p1=ot.unif(len(G1.nodes()))
@@ -230,12 +251,12 @@ for sigma2 in Sigma2:
         # plt.show()
         
         # FGWD
-        alpha=0.5
+        alpha=0.2
         dfgw,log_FGWD,transp_FGWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=alpha,features_metric=fea_metric,method='shortest_path',loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
-        # fig=plt.figure(figsize=(10,8))
-        # plt.title('FGWD coupling')
-        # draw_transp(G1,G2,transp_FGWD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
-        # plt.show()
+        fig=plt.figure(figsize=(10,8))
+        plt.title('FGWD coupling')
+        draw_transp(G1,G2,transp_FGWD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
+        plt.show()
         
         #%% FGWD, find alpha
         # alld=[]
@@ -266,14 +287,85 @@ for sigma2 in Sigma2:
     
         #%%
         thre1=1e-5
-        thre2=-0.015000 # entropic
+        # thre2=-0.015000 # entropic
     
         DFGW[num]=dfgw
         if dfgw<thre1:
             yes+=1
+            
         num+=1
         print(num)
         
+        #%% check the features and structure 
+        index = np.argwhere(transp_FGWD[:,0:-1]> 1e-5)
+        sort_indices = np.argsort(index[:, 1]) # Get the indices that would sort the second column in ascending order
+        index = index[sort_indices]
+        # feature
+        Features_source = list(g1._node.values())
+        print ("Features of subgraph within the source graph:")
+        for source in index[:,0]:  # source is int
+            print (Features_source[source])
+            
+        print ("Features of the query graph:")
+        Features_target = list(g2_nodummy._node.values())
+        for target in index[:,1]:
+            print (Features_target[target])
+            
+        # structure 
+        print ("Neighbours of source subgraph:")
+        Structure_keys = list(g1._node.keys())
+        Structure_source = list(g1._adj.values())
+        Structure_source2 = {}  # the subgraph within the large graph, but with irrelevant nodes
+        for source in index[:,0]:
+            Structure_source2[Structure_keys[source]]=Structure_source[source]
+            
+        temp_keys = list(Structure_source2.keys())
+        for key in temp_keys:
+            for k in Structure_source2[key].copy():
+                if k not in temp_keys:
+                    Structure_source2[key].pop(k, None) # delete the irrelevant nodes
+            print (Structure_source2[key])
+
+        print ("Neighbours of query graph:")
+        Structure_target = list(g2_nodummy._adj.values())
+        for target in index[:,1]:
+            print (Structure_target[target])
+            
+
+        # Adj matrix 
+        def generate_adjacency_matrix(graph_dict):
+            # Get all unique nodes from the dictionary keys
+            nodes = list(graph_dict.keys())
+            num_nodes = len(nodes)
+            
+            # Initialize an empty adjacency matrix with zeros
+            adjacency_matrix = [[0] * num_nodes for _ in range(num_nodes)]
+            
+            # Iterate over the graph dictionary
+            for node, connections in graph_dict.items():
+                # Get the index of the current node
+                node_index = nodes.index(node)
+                
+                # Iterate over the connected nodes
+                for connected_node in connections.keys():
+                    # Get the index of the connected node
+                    connected_node_index = nodes.index(connected_node)
+                    
+                    # Set the corresponding entry in the adjacency matrix to 1
+                    adjacency_matrix[node_index][connected_node_index] = 1
+            
+            return adjacency_matrix
+
+
+        adjacency_subgraph = generate_adjacency_matrix(Structure_source2)
+        print("Adjacency matrix within the source graph")
+        print(adjacency_subgraph)
+
+        adjacency_query = generate_adjacency_matrix(g2_nodummy._adj)
+        print("Adjacency matrix of query graph")
+        print(adjacency_query)
+        
+        #%%
     print(yes/Num)
     print(np.std(DFGW))
     
@@ -288,9 +380,24 @@ ax.set_title('Hide Outlier Points')
 ax.boxplot(DFGW_set, showfliers=False, showmeans=False)
 #%% plot mean and STD
 plt.figure()
-plt.plot(np.array(Sigma2), np.array(Mean), 'k-')
-plt.fill_between(np.array(Sigma2), np.array(Mean)-np.array(STD), np.array(Mean)+np.array(STD))
+plt.plot(np.array(NumFea), np.array(Mean), 'k-')
+plt.fill_between(np.array(NumFea), np.array(Mean)-np.array(STD), np.array(Mean)+np.array(STD))
 #%% plot percentage
 plt.figure()
-plt.plot(np.array(Sigma2),np.array(Percent))
+plt.plot(np.array(NumFea),np.array(Percent))
 plt.grid()
+#%% subsitute back the transport matrix
+n1 = len(G1.nodes())
+n2 = len(G2.nodes())
+constC,hC1,hC2=init_matrix(C1,
+                           C2[0:n2-1,0:n2-1],
+                           transp_FGWD[:,0:len(transp_FGWD[0])-1],
+                           p1,
+                           p2_nodummy,
+                           loss_fun='square_loss') 
+check_gwloss=gwloss(constC,hC1,hC2,transp_FGWD)
+print(check_gwloss)
+check_wloss=np.sum(transp_FGWD*M)
+print(check_wloss)
+check_fgwloss = (1-alpha)*check_wloss+alpha*check_gwloss
+print(check_fgwloss)   

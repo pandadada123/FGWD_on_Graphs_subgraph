@@ -327,7 +327,7 @@ for i in range(1):
         
         # alpha=Alpha[  alld.index(max(alld))  ]  # get the optimal alpha
         
-        alpha = 0.2
+        alpha = 0
         # fea_metric = 'dirac'
         # fea_metric = 'hamming'
         fea_metric = 'sqeuclidean'
