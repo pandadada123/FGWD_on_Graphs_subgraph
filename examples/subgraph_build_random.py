@@ -20,16 +20,17 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import ot
 import random
-from FGW import init_matrix,gwloss
+# from FGW import init_matrix,gwloss
+# from FGW import cal_L,tensor_matrix,gwloss
 
 N = 5 # nodes in subgraph
-N2 = 5 # additional nodes in large graph
+N2 = 2 # additional nodes in large graph
 # NN2 =[5,10,20,40,60]
 # NN2=[20]
 # Pw1 =  [0.3, 0.5, 0.7, 0.9,1] 
 # Pw2 = [0.1, 0.3, 0.5, 0.7, 0.9,1]
-pw2=0.5
-pw1=0.5
+pw2=0.8
+pw1=0.8
 # pw2=0.5
 # Sigma2=[0.01,0.1,0.5,1,2,3,4] 
 # Sigma2=[0.01]
@@ -115,16 +116,17 @@ def build_G1(G,N2=30,numfea=3,pw=0.5):
     Fea = list(range(0,numfea))
     
     L=len(G.nodes())
-    G.add_nodes(list(range(N2)))
+    # G.add_nodes(list(range(N2)))
     
-    NN = N2+L
+    NN = N2+L# total number of nodes in test graph
     for i in range(L,NN):
           # G.add_one_attribute(i,v[i-L])
           fea = random.choice(Fea)
           G.add_one_attribute(i,fea)
     for i in range(NN):
           for j in range(i+1,NN):
-                if j != i and j not in range(L):  # no additional edge within the subgraph
+                # if j != i and j not in range(L):  # no additional edge within the subgraph
+                if j != i and j not in range(L) and j not in G.nx_graph._adj[i].keys():  # no additional edge within the subgraph
                     r=np.random.rand()  # uniform betweeen [0,1)
                     if  r<pw:
                       G.add_edge((i,j))
@@ -220,7 +222,7 @@ for numfea in NumFea:
         vmax=9  # the range of color
         
         plt.figure(figsize=(8,5))
-        draw_rel(g1,vmin=vmin,vmax=vmax,with_labels=True,draw=False)
+        draw_rel(g1,vmin=vmin,vmax=vmax,with_labels=True,draw=False)  # create some bugs in the nx.draw_networkx, don't know why.
         draw_rel(g2,vmin=vmin,vmax=vmax,with_labels=True,shiftx=3,draw=False)
         plt.title('Two graphs. Color indicates the label')
         plt.show()
@@ -387,17 +389,33 @@ plt.figure()
 plt.plot(np.array(NumFea),np.array(Percent))
 plt.grid()
 #%% subsitute back the transport matrix
-n1 = len(G1.nodes())
-n2 = len(G2.nodes())
-constC,hC1,hC2=init_matrix(C1,
-                           C2[0:n2-1,0:n2-1],
-                           transp_FGWD[:,0:len(transp_FGWD[0])-1],
-                           p1,
-                           p2_nodummy,
-                           loss_fun='square_loss') 
-check_gwloss=gwloss(constC,hC1,hC2,transp_FGWD)
-print(check_gwloss)
-check_wloss=np.sum(transp_FGWD*M)
-print(check_wloss)
-check_fgwloss = (1-alpha)*check_wloss+alpha*check_gwloss
-print(check_fgwloss)   
+# n1 = len(G1.nodes())
+# n2 = len(G2.nodes())
+# constC,hC1,hC2=init_matrix(C1,
+#                            C2[0:n2-1,0:n2-1],
+#                            transp_FGWD[:,0:len(transp_FGWD[0])-1],
+#                            p1,
+#                            p2_nodummy,
+#                            loss_fun='square_loss') 
+# check_gwloss=gwloss(constC,hC1,hC2,transp_FGWD)
+# print(check_gwloss)
+# check_wloss=np.sum(transp_FGWD*M)
+# print(check_wloss)
+# check_fgwloss = (1-alpha)*check_wloss+alpha*check_gwloss
+# print(check_fgwloss)   
+#%% subsitute back the transport matrix
+# n1 = len(G1.nodes())
+# n2 = len(G2.nodes())
+# # constC,hC1,hC2=init_matrix(C1,
+# #                             C2[0:n2-1,0:n2-1],
+# #                             transp_FGWD[:,0:len(transp_FGWD[0])-1],
+# #                             p1,
+# #                             p2_nodummy,
+# #                             loss_fun='square_loss') 
+# # check_gwloss=gwloss(constC,hC1,hC2,transp_FGWD)
+# check_gwloss=gwloss(cal_L(C1,C2),transp_FGWD)
+# print(check_gwloss)
+# check_wloss=np.sum(transp_FGWD*M)
+# print(check_wloss)
+# check_fgwloss = (1-alpha)*check_wloss+alpha*check_gwloss
+# print(check_fgwloss)
