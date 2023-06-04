@@ -91,7 +91,7 @@ def KEGGpathwayToGraph(P):
 # G2_nodummy.add_edge(('0','1'))
 # G2_nodummy.add_edge(('1','2'))
 # G2_nodummy.add_edge(('2','3'))
-# g2_nodummy=G2_nodummy.nx_graph
+
 #%% build a subgraph (UPR): only need feature to find 
 G2_nodummy = Graph()
 G2_nodummy.add_attributes({'0':'SNCA', '1':'BIP', '2':'ATF6', '3':'IRE1a',
@@ -107,7 +107,6 @@ G2_nodummy.add_edge(('4','7'))
 G2_nodummy.add_edge(('7','8'))
 G2_nodummy.add_edge(('8','9'))
 
-g2_nodummy=G2_nodummy.nx_graph
 #%%
 G1=KEGGpathwayToGraph(P1)
 # G2_nodummy=KEGGpathwayToGraph(P2_nodummy)
@@ -116,6 +115,8 @@ G2.add_attributes({len(G2.nodes()): '0' })  # add dummy
 
 g1=G1.nx_graph
 g2=G2.nx_graph
+g2_nodummy=G2_nodummy.nx_graph
+
 #%% weights and feature metric
 p1=ot.unif(len(G1.nodes()))
 p2_nodummy=1/len(G1.nodes()) * np.ones([len(G2_nodummy.nodes())])    # ACTUALLY NOT USED IN THE ALGORITHM
@@ -124,12 +125,14 @@ p2=np.append(p2_nodummy,1-sum(p2_nodummy))
 fea_metric = 'dirac'
 # fea_metric = 'hamming'
 # fea_metric = 'sqeuclidean'
+# str_metrc = 'shortest_path'
+str_metric = 'adj'
 vmin=0
 vmax=9  # the range of color
 thresh=0.004
 # FGWD
 alpha=0.2
-dfgw,log_FGWD,transp_FGWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=alpha,features_metric=fea_metric,method='shortest_path',loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
+dfgw,log_FGWD,transp_FGWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=alpha, features_metric=fea_metric, method= str_metric ,loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
 # fig=plt.figure()
 # plt.title('FGWD coupling')
 # draw_transp(G1,G2,transp_FGWD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)

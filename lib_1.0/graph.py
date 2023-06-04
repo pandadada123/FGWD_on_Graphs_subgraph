@@ -414,8 +414,8 @@ def draw_rel(G,draw=True,shiftx=0,shifty=0,return_pos=False,with_labels=True,swi
         for i in range(len(G)):
             Keys_dict[i]=i
         # nx.draw(G,pos,with_labels=True,labels=nx.get_node_attributes(G,'attr_name'),node_color = colors)  # put color values on nodes
-        nx.draw(G,pos,with_labels=True,labels=Keys_dict,node_color = colors)  # put color values on nodes
-        # nx.draw_networkx(G,pos,node_color = colors)  # put keys/indexes on nodes
+        # nx.draw(G,pos,with_labels=True,labels=Keys_dict,node_color = colors)  
+        nx.draw_networkx(G,pos,node_color = colors)  # put keys/indexes on nodes
     else:
         nx.draw(G,pos,with_labels=False,node_color = colors)
     if draw:

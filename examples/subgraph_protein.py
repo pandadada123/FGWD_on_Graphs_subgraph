@@ -34,6 +34,8 @@ X,label=load_local_data(path,dataset_n,wl=0) # using the "wl" option that comput
 # we do not use WL labeling 
 # x=X[2]
 
+Is_info=1
+
 vmin=-5
 vmax=20 # the range of color
 
@@ -45,101 +47,101 @@ vmax=20 # the range of color
 #     plt.show()
 
 #%% create a query graph
-G2=Graph()
+G2_nodummy=Graph()
 # %% protein 
-# G2.add_attributes({1:x.get_attr(1),
+# G2_nodummy.add_attributes({1:x.get_attr(1),
 #                   12:x.get_attr(12),
 #                   23:x.get_attr(23),
 #                   33:x.get_attr(33),
 #                   31:x.get_attr(31),
 #                   41:x.get_attr(41)})  # without dummy
 
-# G2.add_edge((1,12))
-# G2.add_edge((1,33))
-# G2.add_edge((1,23))
-# G2.add_edge((12,23))
-# G2.add_edge((12,33))
-# G2.add_edge((23,31))
-# G2.add_edge((23,41))
-# G2.add_edge((33,41))
-# G2.add_edge((33,31))
+# G2_nodummy.add_edge((1,12))
+# G2_nodummy.add_edge((1,33))
+# G2_nodummy.add_edge((1,23))
+# G2_nodummy.add_edge((12,23))
+# G2_nodummy.add_edge((12,33))
+# G2_nodummy.add_edge((23,31))
+# G2_nodummy.add_edge((23,41))
+# G2_nodummy.add_edge((33,41))
+# G2_nodummy.add_edge((33,31))
 
-# G2.add_attributes({1:[23.0],
+# G2_nodummy.add_attributes({1:[23.0],
 #                     2:[22.0],
 #                     3:[3.0],
 #                     4:[3.0],
 #                     5:[3.0],
 #                     6:[3.0]})  # without dummy
 
-# G2.add_edge((1,2))
-# G2.add_edge((1,3))
-# G2.add_edge((1,4))
-# G2.add_edge((2,3))
-# G2.add_edge((2,4))
-# G2.add_edge((3,5))
-# G2.add_edge((3,6))
-# G2.add_edge((4,5))
-# G2.add_edge((4,6))
+# G2_nodummy.add_edge((1,2))
+# G2_nodummy.add_edge((1,3))
+# G2_nodummy.add_edge((1,4))
+# G2_nodummy.add_edge((2,3))
+# G2_nodummy.add_edge((2,4))
+# G2_nodummy.add_edge((3,5))
+# G2_nodummy.add_edge((3,6))
+# G2_nodummy.add_edge((4,5))
+# G2_nodummy.add_edge((4,6))
 
-# G2.add_attributes({1:[8.0],
+# G2_nodummy.add_attributes({1:[8.0],
 #                     2:[3.0],
 #                     3:[5.0],
 #                     4:[4.0],
 #                     5:[7.0],
 #                     6:[7.0]})  # without dummy
-# G2.add_edge((1,2))
-# G2.add_edge((1,3))
-# G2.add_edge((2,3))
-# G2.add_edge((2,4))
-# G2.add_edge((3,4))
-# G2.add_edge((3,5))
-# G2.add_edge((4,5))
-# G2.add_edge((4,6))
-# G2.add_edge((5,6))
+# G2_nodummy.add_edge((1,2))
+# G2_nodummy.add_edge((1,3))
+# G2_nodummy.add_edge((2,3))
+# G2_nodummy.add_edge((2,4))
+# G2_nodummy.add_edge((3,4))
+# G2_nodummy.add_edge((3,5))
+# G2_nodummy.add_edge((4,5))
+# G2_nodummy.add_edge((4,6))
+# G2_nodummy.add_edge((5,6))
 
 # x2 = X[16]
-# G2.add_attributes({1:x2.get_attr(961),
+# G2_nodummy.add_attributes({1:x2.get_attr(961),
 #                     2:x2.get_attr(944),
 #                     3:x2.get_attr(945),
 #                     4:x2.get_attr(946),
 #                     5:x2.get_attr(947),
 #                     6:x2.get_attr(962)})  # without dummy
-# G2.add_edge((1,2))
-# G2.add_edge((1,3))
-# G2.add_edge((2,3))
-# G2.add_edge((2,4))
-# G2.add_edge((3,4))
-# G2.add_edge((3,5))
-# G2.add_edge((4,5))
-# G2.add_edge((4,6))
-# G2.add_edge((5,6))
+# G2_nodummy.add_edge((1,2))
+# G2_nodummy.add_edge((1,3))
+# G2_nodummy.add_edge((2,3))
+# G2_nodummy.add_edge((2,4))
+# G2_nodummy.add_edge((3,4))
+# G2_nodummy.add_edge((3,5))
+# G2_nodummy.add_edge((4,5))
+# G2_nodummy.add_edge((4,6))
+# G2_nodummy.add_edge((5,6))
 
 #%% bzr 1 
 x2 = X[0]
-G2.add_attributes({1:x2.get_attr(1),
+G2_nodummy.add_attributes({1:x2.get_attr(1),
                     2:x2.get_attr(2),
                     3:x2.get_attr(3),
                     4:x2.get_attr(4),
                     5:x2.get_attr(5),
                     6:x2.get_attr(6)})  # without dummy
 
-G2.add_edge((1,2))
-G2.add_edge((2,3))
-G2.add_edge((3,4))
-G2.add_edge((4,5))
-G2.add_edge((5,6))
-G2.add_edge((6,1))
+G2_nodummy.add_edge((1,2))
+G2_nodummy.add_edge((2,3))
+G2_nodummy.add_edge((3,4))
+G2_nodummy.add_edge((4,5))
+G2_nodummy.add_edge((5,6))
+G2_nodummy.add_edge((6,1))
 
-# G2.add_edge((1,3))
-# G2.add_edge((1,5))
-# G2.add_edge((2,4))
-# G2.add_edge((2,5))
-# G2.add_edge((2,6))
-# G2.add_edge((3,5))
-# G2.add_edge((3,6))
-# G2.add_edge((4,6))
+# G2_nodummy.add_edge((1,3))
+# G2_nodummy.add_edge((1,5))
+# G2_nodummy.add_edge((2,4))
+# G2_nodummy.add_edge((2,5))
+# G2_nodummy.add_edge((2,6))
+# G2_nodummy.add_edge((3,5))
+# G2_nodummy.add_edge((3,6))
+# G2_nodummy.add_edge((4,6))
 
-# G2.add_attributes({1:x.get_attr(1),
+# G2_nodummy.add_attributes({1:x.get_attr(1),
 #                     2:x.get_attr(2),
 #                     3:x.get_attr(3),
 #                     4:x.get_attr(4),
@@ -151,24 +153,24 @@ G2.add_edge((6,1))
 #                     10:x.get_attr(10),
 #                     11:x.get_attr(11),})  # without dummy
 
-# G2.add_edge((1,2))
-# G2.add_edge((2,3))
-# G2.add_edge((3,4))
-# G2.add_edge((4,5))
-# G2.add_edge((5,6))
-# G2.add_edge((6,1))
+# G2_nodummy.add_edge((1,2))
+# G2_nodummy.add_edge((2,3))
+# G2_nodummy.add_edge((3,4))
+# G2_nodummy.add_edge((4,5))
+# G2_nodummy.add_edge((5,6))
+# G2_nodummy.add_edge((6,1))
 
-# G2.add_edge((4,7))
-# G2.add_edge((7,8))
-# G2.add_edge((8,9))
-# G2.add_edge((9,10))
-# G2.add_edge((10,11))
-# G2.add_edge((11,5))
+# G2_nodummy.add_edge((4,7))
+# G2_nodummy.add_edge((7,8))
+# G2_nodummy.add_edge((8,9))
+# G2_nodummy.add_edge((9,10))
+# G2_nodummy.add_edge((10,11))
+# G2_nodummy.add_edge((11,5))
 #%%
-g2=G2.nx_graph
+g2_nodummy=G2_nodummy.nx_graph
 
 plt.figure(figsize=(8,5))
-draw_rel(g2,vmin=vmin,vmax=vmax,with_labels=True,draw=False)
+draw_rel(g2_nodummy,vmin=vmin,vmax=vmax,with_labels=True,draw=False)
 plt.axis('off')
 plt.show()
     
@@ -182,7 +184,7 @@ for i in range(1):
     #     print(i)
         
     # elif label[i]==-1:
-        x=X[36]
+        x=X[0]
        
         # x=X[16]
         # x = X[5]
@@ -217,7 +219,7 @@ for i in range(1):
     
         #%% [DO NOT NEED]
         # def change(graph,tohash=True):
-        def change(graph):  # change attribute of list to array AND change the node indexes to start from 0
+        def change(graph):  # change attribute of list to array AND change the node indexes to start from 0 [no use any nore]
         
             final_graph=nx.Graph(graph)
             
@@ -258,23 +260,21 @@ for i in range(1):
         # plt.title('Original graph Color indicates the label')
         # plt.show()
         
-       
+        #%%
+        G1=Graph(g1)
+        G2=copy.deepcopy(G2_nodummy)
+        # G2_dummy.add_attributes({100: np.array ( [100]*(len(x.get_attr(1)))  )  })  # add dummy 
+        G2.add_attributes({1e6: np.array([0])  })  # add dummy 
+        # G2_dummy.add_attributes({len(G2.nodes()): [0] })  # add dummy 
+        g2=G2.nx_graph
+        
+        # G2_dummy = Graph(change(g2_dummy))
         # G2 = Graph(change(g2))
         # g2=G2.nx_graph
         #%%
-        G1=Graph(g1)
-        G2_dummy=copy.deepcopy(G2)
-        # G2_dummy.add_attributes({100: np.array ( [100]*(len(x.get_attr(1)))  )  })  # add dummy 
-        G2_dummy.add_attributes({1e6: np.array([0])  })  # add dummy 
-        # G2_dummy.add_attributes({len(G2.nodes()): [0] })  # add dummy 
-        g2_dummy=G2_dummy.nx_graph
-        
-        # G2_dummy = Graph(change(g2_dummy))
-        
-        #%%
         # g1=G1.nx_graph
+        # g2_nodummy=G2_nodummy.nx_graph
         # g2=G2.nx_graph
-        # g2_dummy=G2_dummy.nx_graph
             
         
         #%% plot
@@ -293,7 +293,7 @@ for i in range(1):
         # G2_dummy=Graph(g2_dummy)
         
         p1=ot.unif(len(G1.nodes()))
-        p2_nodummy=1/len(G1.nodes()) * np.ones([len(G2.nodes())])    # ACTUALLY NOT USED IN THE ALGORITHM
+        p2_nodummy=1/len(G1.nodes()) * np.ones([len(G2_nodummy.nodes())])    # ACTUALLY NOT USED IN THE ALGORITHM
         p2=np.append(p2_nodummy,1-sum(p2_nodummy))
         
         # dw,transp_WD=Wasserstein_distance(features_metric='sqeuclidean').graph_d(G1,G2,p1,p2)
@@ -304,7 +304,7 @@ for i in range(1):
         # plt.show()
         
         ## dgw=Fused_Gromov_Wasserstein_distance(alpha=1,features_metric='dirac',method='shortest_path').graph_d(g1,g2)
-        # dgw,log_GWD,transp_GWD=Fused_Gromov_Wasserstein_distance(alpha=1,features_metric='sqeuclidean',method='shortest_path',loss_fun= 'square_loss').graph_d(G1,G2_dummy,p1,p2,p2_nodummy)
+        # dgw,log_GWD,transp_GWD=Fused_Gromov_Wasserstein_distance(alpha=1,features_metric='sqeuclidean',method='shortest_path',loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
         # plt.figure(figsize=(8,5))
         # plt.title('GWD coupling')
         # draw_transp(G1,G2_dummy,transp_GWD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
@@ -327,15 +327,16 @@ for i in range(1):
         
         # alpha=Alpha[  alld.index(max(alld))  ]  # get the optimal alpha
         
-        alpha = 0
+        alpha = 0.2
         # fea_metric = 'dirac'
         # fea_metric = 'hamming'
         fea_metric = 'sqeuclidean'
-        
-        dfgw,log_FGWD,transp_FGWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=alpha, features_metric= fea_metric, method='shortest_path', loss_fun='square_loss').graph_d(G1,G2_dummy,p1,p2,p2_nodummy)
+        # str_metric = 'shortest_path'
+        str_metric = 'adj'
+        dfgw,log_FGWD,transp_FGWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=alpha, features_metric= fea_metric, method= str_metric, loss_fun='square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
         plt.figure(figsize=(8,5))
         # plt.title('FGWD coupling')
-        draw_transp(G1,G2_dummy,transp_FGWD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
+        draw_transp(G1,G2,transp_FGWD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
         plt.axis('off')
         plt.show()
     
@@ -349,6 +350,79 @@ for i in range(1):
         
         print (i)
     
+        # %% check the features and structure
+        if Is_info:
+            index = np.argwhere(transp_FGWD[:, 0:-1] > 1e-3)
+            # Get the indices that would sort the second column in ascending order
+            sort_indices = np.argsort(index[:, 1])
+            index = index[sort_indices]
+            
+            # feature
+            Features_source = list(g1._node.values())
+            print("Features of subgraph within the source graph:")
+            for source in index[:, 0]:  # source is int
+                print(Features_source[source])
+    
+            print("Features of the query graph:")
+            Features_target = list(g2_nodummy._node.values())
+            for target in index[:, 1]:
+                print(Features_target[target])
+    
+            # structure
+            print("Neighbours of source subgraph:")
+            Structure_keys = list(g1._node.keys())
+            Structure_source = list(g1._adj.values())
+            Structure_source2 = {}  # the subgraph within the large graph, but with irrelevant nodes
+            for source in index[:, 0]:
+                Structure_source2[Structure_keys[source]
+                                  ] = Structure_source[source]
+    
+            temp_keys = list(Structure_source2.keys())
+            for key in temp_keys:
+                for k in Structure_source2[key].copy():
+                    if k not in temp_keys:
+                        # delete the irrelevant nodes
+                        Structure_source2[key].pop(k, None)
+                print(Structure_source2[key])
+    
+            print("Neighbours of query graph:")
+            Structure_target = list(g2_nodummy._adj.values())
+            for target in index[:, 1]:
+                print(Structure_target[target])
+    
+            # Adj matrix
+    
+            def generate_adjacency_matrix(graph_dict):
+                # Get all unique nodes from the dictionary keys
+                nodes = list(graph_dict.keys())
+                num_nodes = len(nodes)
+    
+                # Initialize an empty adjacency matrix with zeros
+                adjacency_matrix = [[0] * num_nodes for _ in range(num_nodes)]
+    
+                # Iterate over the graph dictionary
+                for node, connections in graph_dict.items():
+                    # Get the index of the current node
+                    node_index = nodes.index(node)
+    
+                    # Iterate over the connected nodes
+                    for connected_node in connections.keys():
+                        # Get the index of the connected node
+                        connected_node_index = nodes.index(connected_node)
+    
+                        # Set the corresponding entry in the adjacency matrix to 1
+                        adjacency_matrix[node_index][connected_node_index] = 1
+    
+                return adjacency_matrix
+    
+            adjacency_subgraph = generate_adjacency_matrix(Structure_source2)
+            print("Adjacency matrix within the source graph")
+            print(adjacency_subgraph)
+    
+            adjacency_query = generate_adjacency_matrix(g2_nodummy._adj)
+            print("Adjacency matrix of query graph")
+            print(adjacency_query)
+            
 #%%
 print(obj)
 

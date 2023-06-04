@@ -137,6 +137,7 @@ class Fused_Gromov_Wasserstein_distance():
         The Fused Gromov-Wasserstein distance between the features of graph1 and graph2
         """
         gofeature=True
+        
         nodes1=graph1.nodes()
         nodes2=graph2.nodes()
         startstruct=time.time()
@@ -144,20 +145,33 @@ class Fused_Gromov_Wasserstein_distance():
         n1=len(nodes1)
         n2=len(nodes2)
         
+        # Keys1 = sorted(list(nodes1.keys()))  # order of nodes for cost matrices
+        # Keys2 = sorted(list(nodes2.keys()))
+        Keys1 = list(nodes1.keys()) # order of nodes for cost matrices (DO NOT NEED TO BE SORTED)
+        Keys2 = list(nodes2.keys())
+        
         #%% Calculate the shortest path distance matrix 
         # LargeValue = sys.float_info.max
         LargeValue = 1e6
-        def shortest(G):
-            n = len (G.nodes())
-            nodes = list(G.nodes().keys())
-            C = np.zeros ([n,n])
+        
+        def shortest(G,Keys):
+            g = G.nx_graph
+            # Nodes = list(g.nodes())  # list of nodes/keys, no sort
+            # Keys = sorted(G.nodes().keys())
+            # n = len (G.nodes())
+            n = len(Keys)
+            C = np.zeros([n,n])
             for i in range(n):
-                for ii in range(n):  
+                for ii in range(n):
                     try:
-                        # C[i][ii]=nx.shortest_path_length(G.nx_graph,source=i,target=ii)
-                        C[i][ii]=nx.shortest_path_length(G.nx_graph,source=nodes[i],target=nodes[ii])  # change for the dataset
+                        C[i][ii]=nx.shortest_path_length(g,source=Keys[i],target=Keys[ii])
                     except: 
                         C[i][ii]=LargeValue
+            return C
+        
+        def adj(G,Keys):
+            C = nx.to_numpy_array(G.nx_graph, nodelist=Keys)
+            
             return C
         
         # C1=graph1.distance_matrix(method=self.method)
@@ -181,11 +195,26 @@ class Fused_Gromov_Wasserstein_distance():
         # C2=np.append(C2_temp,100*np.ones([1,n2]),axis=0)
         # C2[n2-1,n2-1]=0
 
-        C1 = shortest(graph1)
-        C2 = shortest(graph2)
+        if self.method=='shortest_path':
+            C1 = shortest(graph1,Keys1)
+            C2 = shortest(graph2,Keys2)
         
-        C2_nodummy=C2[:,0:n2-1]
-        C2_nodummy=C2_nodummy[0:n2-1,:]
+        elif self.method=='adj':
+            # Use adjacency matrices 
+            # gg1 = graph1.nx_graph
+            # gg2 = graph2.nx_graph
+            # C1 = nx.to_numpy_array(gg1,nodelist=(list(gg1._node.keys())).sort())
+            # C2 = nx.to_numpy_array(gg2,nodelist=(list(gg2._node.keys())).sort())
+            # C1 = nx.to_numpy_array(gg1)
+            # C2 = nx.to_numpy_array(gg2)
+            C1 = adj(graph1,Keys1)
+            C2 = adj(graph2,Keys2)
+            
+        else:
+            C1 = np.zeros([n1,n1])
+            C2 = np.zeros([n2,n2])
+            
+        C2_nodummy=C2[0:n2-1,0:n2-1]
         
         #%%
         end2=time.time()
@@ -209,32 +238,21 @@ class Fused_Gromov_Wasserstein_distance():
                 # M=ot.dist(x1,x2,metric=f)
                 
                 # for KEGG (only use dirac) 
-                keys1 = list(nodes1.keys())
-                keys2 = list(nodes2.keys())
                 for i in range(n1):
                     for j in range(n2):
-                        f1 = nodes1[keys1[i]] ['attr_name']
-                        f2 = nodes2[keys2[j]] ['attr_name']
+                        f1 = nodes1[Keys1[i]] ['attr_name'] # feature 1
+                        f2 = nodes2[Keys2[j]] ['attr_name']
                         f1 = f1.replace(' ','')
                         f2 = f2.replace(' ','')
                         a = f1.split(',')
                         b = f2.split(',')
                         x=[k for k in a if k in b]
-                        if len(x)==0:
+                        if len(x)==0: # no features are the same
                             M[i,j] = 1
                         else:
                             M[i,j] = 0
                 
-            # elif self.features_metric=='hamming': #see experimental setup in the original paper
-            #     # f=lambda x,y: hamming_dist(x,y)
-            #     # M=ot.dist(x1,x2,metric=f)
-            #     M=ot.dist(x1,x2,metric='hamming')
-            # elif self.features_metric=='sqeuclidean':
-            #     M=np.zeros((C1.shape[0],C2.shape[0]))
-            #     for i in range(C1.shape[0]):
-            #         for j in range(C2.shape[0]):  
-            #               M[i][j]=sum(pow(x1[i,:]-x2[j,:] ,2))
-                
+            
             else:
                 M=ot.dist(x1,x2,metric=self.features_metric)
                 

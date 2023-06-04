@@ -137,12 +137,18 @@ class Fused_Gromov_Wasserstein_distance():
         The Fused Gromov-Wasserstein distance between the features of graph1 and graph2
         """
         gofeature=True
+        
         nodes1=graph1.nodes()
         nodes2=graph2.nodes()
         startstruct=time.time()
         
         n1=len(nodes1)
         n2=len(nodes2)
+        
+        # Keys1 = sorted(list(nodes1.keys()))  # order of nodes for cost matrices
+        # Keys2 = sorted(list(nodes2.keys()))
+        Keys1 = list(nodes1.keys()) # order of nodes for cost matrices (DO NOT NEED TO BE SORTED)
+        Keys2 = list(nodes2.keys())
         
         #%% Calculate the shortest path distance matrix 
         # LargeValue = sys.float_info.max
@@ -159,20 +165,26 @@ class Fused_Gromov_Wasserstein_distance():
         #                 C[i][ii]=LargeValue
         #     return C
         
-        def shortest(G):
-            Keys = sorted(G.nodes().keys())
-            n = len (G.nodes())
+        def shortest(G,Keys):
+            g = G.nx_graph
+            # Nodes = list(g.nodes())  # list of nodes/keys, no sort
+            # Keys = sorted(G.nodes().keys())
+            # n = len (G.nodes())
+            n = len(Keys)
             C = np.zeros([n,n])
             for i in range(n):
                 for ii in range(n):
-                    key1 = Keys[i]
-                    key2 = Keys[ii]
                     try:
-                        C[i][ii]=nx.shortest_path_length(G.nx_graph,source=key1,target=key2)
+                        C[i][ii]=nx.shortest_path_length(g,source=Keys[i],target=Keys[ii])
                     except: 
                         C[i][ii]=LargeValue
             return C
         
+        def adj(G,Keys):
+            C = nx.to_numpy_array(G.nx_graph, nodelist=Keys)
+            
+            return C
+            
         # C1=graph1.distance_matrix(method=self.method)
         # C1 = np.zeros ([n1,n1])
         # for i in range(n1):
@@ -194,11 +206,25 @@ class Fused_Gromov_Wasserstein_distance():
         # C2=np.append(C2_temp,100*np.ones([1,n2]),axis=0)
         # C2[n2-1,n2-1]=0
 
-        C1 = shortest(graph1)
-        C2 = shortest(graph2)
+        if self.method=='shortest_path':
+            C1 = shortest(graph1,Keys1)
+            C2 = shortest(graph2,Keys2)
         
-        # C2_nodummy=C2[:,0:n2-1]
-        # C2_nodummy=C2_nodummy[0:n2-1,:]
+        elif self.method=='adj':
+            # Use adjacency matrices 
+            # gg1 = graph1.nx_graph
+            # gg2 = graph2.nx_graph
+            # C1 = nx.to_numpy_array(gg1,nodelist=(list(gg1._node.keys())).sort())
+            # C2 = nx.to_numpy_array(gg2,nodelist=(list(gg2._node.keys())).sort())
+            # C1 = nx.to_numpy_array(gg1)
+            # C2 = nx.to_numpy_array(gg2)
+            C1 = adj(graph1,Keys1)
+            C2 = adj(graph2,Keys2)
+            
+        else:
+            C1 = np.zeros([n1,n1])
+            C2 = np.zeros([n2,n2])
+            
         C2_nodummy=C2[0:n2-1,0:n2-1]
         
         #%%
@@ -213,8 +239,6 @@ class Fused_Gromov_Wasserstein_distance():
         #     x2=None
         #     gofeature=False
         
-        Keys1 = sorted(graph1.nodes().keys())
-        Keys2 = sorted(graph2.nodes().keys())
         
         if gofeature : 
             M=np.zeros((C1.shape[0],C2.shape[0])) # initialization
