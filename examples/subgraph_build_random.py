@@ -26,7 +26,7 @@ from ot_distances import Fused_Gromov_Wasserstein_distance
 from FGW import init_matrix,gwloss
 # from FGW import cal_L,tensor_matrix,gwloss
 
-N = 5  # nodes in subgraph
+N = 10  # nodes in subgraph
 # NN =  [5,10,15,25,35,45,55]
 # NN =[10]
 # NN = [10]
@@ -46,7 +46,7 @@ pw2 = 0.5
 # Sigma2=[0.01]
 # sigma1=0.1
 # sigma2=0.1
-numfea = 2
+numfea = 4
 # NumFea = list(range(1, 11))  # from 1 to 20
 # NumFea = [2]
 
@@ -204,14 +204,14 @@ for N3 in NN3:
         # %% build a random subgraoh
         # G0 = Graph() # an empty graph
         # different graph with different seed -> same subgraph everytime
-        np.random.seed(12)
+        # np.random.seed(12)
         # G11 = build_G1(G0, N=N, numfea = numfea, pw = pw1) # if set pw = 1 to build a fully-conn graph
         # if set pw = 1 to build a fully-conn graph
         # pw1=pw
         G11 = build_comunity_graph(N=N, numfea=numfea, pw=pw1)
 
         # %% build G1
-        np.random.seed()  # different graph G1 every time
+        # np.random.seed()  # different graph G1 every time
         G12 = copy.deepcopy(G11)  # initialize with subgraph
         # G111=build_G1(G12,N=N2,mu=1,sigma=8,pw=0.1)
         # G112=build_G1(G12,N=N2,mu=1,sigma=8,pw=0.1)
