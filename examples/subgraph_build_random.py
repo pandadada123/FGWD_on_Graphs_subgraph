@@ -25,8 +25,9 @@ from ot_distances import Fused_Gromov_Wasserstein_distance
 # from data_loader import load_local_data,histog,build_noisy_circular_graph
 from FGW import init_matrix,gwloss
 # from FGW import cal_L,tensor_matrix,gwloss
+import scipy.stats as st
 
-N = 5  # nodes in subgraph
+N = 15  # nodes in subgraph
 # NN =  [5,10,15,25,35,45,55]
 # NN =[10]
 # NN = [10]
@@ -37,7 +38,7 @@ N = 5  # nodes in subgraph
 # N3 = [x+N for x in NN2]
 NN3 = [15,20,25,35,45,55,65,75,85,95]
 # N3 = N+N2
-# NN3 = [65]
+# NN3 = [15]
 # Pw = np.linspace(0.1, 1, 10)
 # pw2 = 0.5
 pw1 = 0.5
@@ -46,7 +47,7 @@ pw2 = 0.5
 # Sigma2=[0.01]
 # sigma1=0.1
 # sigma2=0.1
-numfea = 2
+numfea = 4
 # NumFea = list(range(1, 11))  # from 1 to 20
 # NumFea = [2]
 
@@ -59,6 +60,8 @@ Percent1 = []
 Percent2 = []
 Mean = []
 STD = []
+Lower = []
+Upper = []
 
 # %% build star graph
 
@@ -160,7 +163,7 @@ def build_G1(G, N2=30, numfea=3, pw=0.5):
 # %%
 
 for N3 in NN3:
-    Num = 500 # number of random graphs
+    Num = 1 # number of random graphs
     num = 0
     yes1 = 0
     yes2 = 0
@@ -423,20 +426,28 @@ for N3 in NN3:
 
     Mean.append(np.mean(DFGW))
     STD.append(np.std(DFGW))
+    
+    #create 95% confidence interval for population mean weight
+    lower, upper = st.norm.interval(confidence=0.95, loc=np.mean(DFGW), scale=st.sem(DFGW))
+    Lower.append(lower)
+    Upper.append(upper)
 
 # %% boxplot
 fig, ax = plt.subplots()
 # ax.set_title('Hide Outlier Points')
 ax.boxplot(DFGW_set, showfliers=False, showmeans=False)
 # %% plot mean and STD
+
 plt.figure()
 plt.plot(np.array(NN3), np.array(Mean), 'k-+')
-plt.fill_between(np.array(NN3), np.array(Mean)-np.array(STD), np.array(Mean)+np.array(STD), alpha=0.5) # alpha here is transparency
+# plt.fill_between(np.array(NN3), np.array(Mean)-np.array(STD), np.array(Mean)+np.array(STD), alpha=0.5) # alpha here is transparency
+plt.fill_between(np.array(NN3), np.array(Lower), np.array(Upper), alpha=0.5) # alpha here is transparency
 plt.grid()
 # plt.xlabel('Size of test graph')
 # plt.xlabel('Number of features')
 # plt.xlabel('Connectivity of graph')
 plt.ylabel('Mean and STD')
+
 # %% plot percentage
 plt.figure()
 plt.plot(np.array(NN3), np.array(Percent1),'k-+', label='exact match')
@@ -478,3 +489,27 @@ plt.legend()
 # print(check_wloss)
 # check_fgwloss = (1-alpha)*check_wloss+alpha*check_gwloss
 # print(check_fgwloss)
+#%% combine the figures 
+# N5_numfea4 = np.load('E:/Master Thesis/sim_record/N5_numfea4.npy').reshape((1,Num))
+# N10_numfea4 = np.load('E:/Master Thesis/sim_record/N10_numfea4.npy').reshape((1,Num))
+# N15_numfea4 = np.load('E:/Master Thesis/sim_record/N15_numfea4.npy').reshape((1,Num))
+# # data1 = np.vstack((N5_numfea4,N10_numfea4,N15_numfea4))
+# lower, upper = st.norm.interval(confidence=0.95, loc=np.mean(N5_numfea4), scale=st.sem(N5_numfea4))
+# Lower.append(lower)
+# Upper.append(upper)
+
+# plt.figure()
+
+# # for i in range(3):
+# #     print (i)
+# #     yes1 = ((data[i,:]<thre1).sum())/Num
+# #     yes2 = ((data[i,:]<thre2).sum())/Num
+#     plt.plot(np.array(NN3), np.array(Mean), 'k-+')
+#     plt.fill_between(np.array(NN3), np.array(Lower), np.array(Upper), alpha=0.5) # alpha here is transparency
+#     plt.grid()
+#     plt.xlabel('Size of test graph')
+#     plt.ylabel('Mean and STD')
+    
+
+
+
