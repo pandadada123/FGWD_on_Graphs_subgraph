@@ -435,9 +435,6 @@ def draw_transp(G1,G2,transp,shiftx=1,shifty=0,thresh=0.09,swipy=False,swipx=Fal
          for k2,v2 in pos2.items():
              if (transp[invd1[k1],invd2[k2]]>thresh):
                  if (k2 == list(pos2)[-1]):
-                     # plt.plot([pos1[k1][0], pos2[k2][0]]
-                     #      , [pos1[k1][1], pos2[k2][1]], 'k--'
-                     #      , alpha=transp[invd1[k1],invd2[k2]]/np.max(transp),lw=2)
                      continue
                  else:
                      plt.plot([pos1[k1][0], pos2[k2][0]]

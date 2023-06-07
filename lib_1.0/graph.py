@@ -423,6 +423,42 @@ def draw_rel(G,draw=True,shiftx=0,shifty=0,return_pos=False,with_labels=True,swi
     if return_pos:
         return pos
         
+# def draw_transp(G1,G2,transp,shiftx=1,shifty=0,thresh=0.09,swipy=False,swipx=False,vmin=0,vmax=7,with_labels=True):
+#     pos1=draw_rel(G1.nx_graph,draw=False,return_pos=True,vmin=vmin,vmax=vmax,with_labels=with_labels)
+#     pos2=draw_rel(G2.nx_graph,draw=False,shiftx=shiftx,shifty=shifty,return_pos=True,swipx=swipx,swipy=swipy,vmin=vmin,vmax=vmax,with_labels=with_labels)
+#     _,invd1=G1.all_matrix_attr(return_invd=True)
+#     _,invd2=G2.all_matrix_attr(return_invd=True)
+#     # for k1,v1 in pos1.items():
+#     #     for k2,v2 in pos2.items():
+#     #         if (transp[invd1[k1],invd2[k2]]>thresh):
+#     #             plt.plot([pos1[k1][0], pos2[k2][0]]
+#     #                      , [pos1[k1][1], pos2[k2][1]], 'r--'
+#     #                      , alpha=transp[invd1[k1],invd2[k2]]/np.max(transp),lw=2)
+    
+#     # Keys1 = sorted(G1.nodes().keys())
+#     # Keys2 = sorted(G2.nodes().keys())
+#     Keys1 = list(G1.nodes().keys())
+#     Keys2 = list(G2.nodes().keys())
+#     for k1,v1 in pos1.items():
+#          for k2,v2 in pos2.items():
+#              K1=Keys1.index(k1)
+#              K2=Keys2.index(k2)
+#               # if (transp[invd1[k1],invd2[k2]]>thresh):
+#              if (transp[K1,K2]>thresh):
+#                  # if (k2 == list(pos2)[-1]):
+#                  if k2==Keys2[-1]:
+#                      # plt.plot([pos1[k1][0], pos2[k2][0]]
+#                      #      , [pos1[k1][1], pos2[k2][1]], 'k--'
+#                      #      , alpha=transp[invd1[k1],invd2[k2]]/np.max(transp),lw=2)
+#                      continue
+#                  else:
+#                       # plt.plot([pos1[k1][0], pos2[k2][0]]
+#                       #      , [pos1[k1][1], pos2[k2][1]], 'r-'
+#                       #      , alpha=transp[invd1[k1],invd2[k2]]/np.max(transp),lw=2by)
+#                       plt.plot([pos1[k1][0], pos2[k2][0]]
+#                            , [pos1[k1][1], pos2[k2][1]], 'r-'
+#                            , alpha=transp[K1,K2]/np.max(transp),lw=2)
+
 def draw_transp(G1,G2,transp,shiftx=1,shifty=0,thresh=0.09,swipy=False,swipx=False,vmin=0,vmax=7,with_labels=True):
     pos1=draw_rel(G1.nx_graph,draw=False,return_pos=True,vmin=vmin,vmax=vmax,with_labels=with_labels)
     pos2=draw_rel(G2.nx_graph,draw=False,shiftx=shiftx,shifty=shifty,return_pos=True,swipx=swipx,swipy=swipy,vmin=vmin,vmax=vmax,with_labels=with_labels)
@@ -435,26 +471,14 @@ def draw_transp(G1,G2,transp,shiftx=1,shifty=0,thresh=0.09,swipy=False,swipx=Fal
     #                      , [pos1[k1][1], pos2[k2][1]], 'r--'
     #                      , alpha=transp[invd1[k1],invd2[k2]]/np.max(transp),lw=2)
     
-    Keys1 = sorted(G1.nodes().keys())
-    Keys2 = sorted(G2.nodes().keys())
     for k1,v1 in pos1.items():
          for k2,v2 in pos2.items():
-             K1=Keys1.index(k1)
-             K2=Keys2.index(k2)
-              # if (transp[invd1[k1],invd2[k2]]>thresh):
-             if (transp[K1,K2]>thresh):
-                 # if (k2 == list(pos2)[-1]):
-                 if k2==Keys2[-1]:
-                     # plt.plot([pos1[k1][0], pos2[k2][0]]
-                     #      , [pos1[k1][1], pos2[k2][1]], 'k--'
-                     #      , alpha=transp[invd1[k1],invd2[k2]]/np.max(transp),lw=2)
+             if (transp[invd1[k1],invd2[k2]]>thresh):
+                 if (k2 == list(pos2)[-1]):
                      continue
                  else:
-                      # plt.plot([pos1[k1][0], pos2[k2][0]]
-                      #      , [pos1[k1][1], pos2[k2][1]], 'r-'
-                      #      , alpha=transp[invd1[k1],invd2[k2]]/np.max(transp),lw=2by)
-                      plt.plot([pos1[k1][0], pos2[k2][0]]
-                           , [pos1[k1][1], pos2[k2][1]], 'r-'
-                           , alpha=transp[K1,K2]/np.max(transp),lw=2)
+                     plt.plot([pos1[k1][0], pos2[k2][0]]
+                          , [pos1[k1][1], pos2[k2][1]], 'r-'
+                          , alpha=transp[invd1[k1],invd2[k2]]/np.max(transp),lw=2)
 
 
