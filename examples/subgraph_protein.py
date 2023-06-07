@@ -39,7 +39,7 @@ Is_info=1
 vmin=-5
 vmax=20 # the range of color
 
-# for i in range(10):
+# for i in range(663,673):
 #     x=X[i]
 #     plt.figure(figsize=(8,5))
 #     draw_rel(x.nx_graph,vmin=vmin,vmax=vmax,with_labels=True,draw=False)
@@ -179,14 +179,14 @@ obj=[]
 # for i in range(663,1113):
 # for i in range(len(X)):
 for i in range(1):
+    # print(i)
     # if label[i]==1:
     #     dfgw = np.nan
-    #     print(i)
         
     # elif label[i]==-1:
-        x=X[0]
+    #     x=X[i]
        
-        # x=X[16]
+        x=X[2]
         # x = X[5]
         # plt.figure(figsize=(8,5))
         # draw_rel(X[i].nx_graph,vmin=vmin,vmax=vmax,with_labels=True,draw=False)
@@ -334,6 +334,7 @@ for i in range(1):
         # str_metric = 'shortest_path'
         str_metric = 'adj'
         dfgw,log_FGWD,transp_FGWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=alpha, features_metric= fea_metric, method= str_metric, loss_fun='square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
+        
         plt.figure(figsize=(8,5))
         # plt.title('FGWD coupling')
         draw_transp(G1,G2,transp_FGWD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
@@ -424,7 +425,7 @@ for i in range(1):
             print(adjacency_query)
             
 #%%
-print(obj)
+print("all obj values:",obj)
 
 Thre1=1e-5
 index1 = []
@@ -433,8 +434,8 @@ for idx in range(len(obj)) :
     if obj[idx] < Thre1:
         index1.append(idx)
         obj1.append(obj[idx])
-print(index1)
-print(obj1)
+print("index1:",index1)
+print("obj values from index1:",obj1)
 
 Thre2=1e-3
 index2 = []
@@ -443,5 +444,5 @@ for idx in range(len(obj)) :
     if obj[idx] < Thre2:
         index2.append(idx)
         obj2.append(obj[idx])
-print(index2)
-print(obj2)
+print("index2:",index2)
+print("obj values from index2:",obj2)
