@@ -25,6 +25,7 @@ from ot_distances import Fused_Gromov_Wasserstein_distance
 # from data_loader import load_local_data,histog,build_noisy_circular_graph
 from FGW import init_matrix,gwloss
 # from FGW import cal_L,tensor_matrix,gwloss
+import scipy.stats as st
 
 N = 10  # nodes in subgraph
 # NN =  [5,10,15,25,35,45,55]
@@ -35,13 +36,14 @@ N = 10  # nodes in subgraph
 # NN2 =  [75,70,65,55,45,35,25]
 # NN2=[5]
 # N3 = [x+N for x in NN2]
-NN3 = [15,20,25,35,45,55,65,75,85,95]
+# NN3 = [15,20,25,35,45,55,65,75,85,95]
 # N3 = N+N2
+N3 = 45
 # NN3 = [65]
-# Pw = np.linspace(0.1, 1, 10)
+Pw = np.linspace(0.1, 1, 10)
 # pw2 = 0.5
-pw1 = 0.5
-pw2 = 0.5
+# pw1 = 0.5
+# pw2 = 0.5
 # Sigma2=[0.01,0.1,0.5,1,2,3,4]
 # Sigma2=[0.01]
 # sigma1=0.1
@@ -59,6 +61,8 @@ Percent1 = []
 Percent2 = []
 Mean = []
 STD = []
+Lower = []
+Upper = []
 
 # %% build star graph
 
@@ -159,8 +163,8 @@ def build_G1(G, N2=30, numfea=3, pw=0.5):
 
 # %%
 
-for N3 in NN3:
-    Num = 500 # number of random graphs
+for pw in Pw:
+    Num = 1000 # number of random graphs
     num = 0
     yes1 = 0
     yes2 = 0
@@ -207,7 +211,7 @@ for N3 in NN3:
         # np.random.seed(12)
         # G11 = build_G1(G0, N=N, numfea = numfea, pw = pw1) # if set pw = 1 to build a fully-conn graph
         # if set pw = 1 to build a fully-conn graph
-        # pw1=pw
+        pw1=pw
         G11 = build_comunity_graph(N=N, numfea=numfea, pw=pw1)
 
         # %% build G1
@@ -217,7 +221,7 @@ for N3 in NN3:
         # G112=build_G1(G12,N=N2,mu=1,sigma=8,pw=0.1)
         # G1 = Graph(merge_graph(G111.nx_graph,G112.nx_graph))
         N2 = N3 - N
-        # pw2=pw
+        pw2=pw
         G1 = build_G1(G12, N2=N2, numfea=numfea, pw=pw2)
 
         # check if all nodes in G1 are connected
@@ -423,28 +427,34 @@ for N3 in NN3:
 
     Mean.append(np.mean(DFGW))
     STD.append(np.std(DFGW))
-
+    
+    #create 95% confidence interval for population mean weight
+    lower, upper = st.norm.interval(confidence=0.95, loc=np.mean(DFGW), scale=st.sem(DFGW))
+    Lower.append(lower)
+    Upper.append(upper)
+    
 # %% boxplot
 fig, ax = plt.subplots()
 # ax.set_title('Hide Outlier Points')
 ax.boxplot(DFGW_set, showfliers=False, showmeans=False)
 # %% plot mean and STD
 plt.figure()
-plt.plot(np.array(NN3), np.array(Mean), 'k-+')
-plt.fill_between(np.array(NN3), np.array(Mean)-np.array(STD), np.array(Mean)+np.array(STD), alpha=0.5) # alpha here is transparency
+plt.plot(np.array(Pw), np.array(Mean), 'k-+')
+# plt.fill_between(np.array(Pw), np.array(Mean)-np.array(STD), np.array(Mean)+np.array(STD), alpha=0.5) # alpha here is transparency
+plt.fill_between(np.array(Pw), np.array(Lower), np.array(Upper), facecolor = 'k',alpha=0.5) # alpha here is transparency
 plt.grid()
 # plt.xlabel('Size of test graph')
 # plt.xlabel('Number of features')
-# plt.xlabel('Connectivity of graph')
+plt.xlabel('Connectivity of graphs')
 plt.ylabel('Mean and STD')
 # %% plot percentage
 plt.figure()
-plt.plot(np.array(NN3), np.array(Percent1),'k-+', label='exact match')
-plt.plot(np.array(NN3), np.array(Percent2),'b-*', label='approx match')
+plt.plot(np.array(Pw), np.array(Percent1),'k-x', label='exact match')
+plt.plot(np.array(Pw), np.array(Percent2),'k--.', label='approx match')
 plt.grid()
 # plt.xlabel('Size of test graph')
 # plt.xlabel('Number of features')
-# plt.xlabel('Connectivity of graph')
+plt.xlabel('Connectivity of graphs')
 plt.ylabel('Success rate')
 plt.legend()
 #%% subsitute back the transport matrix
