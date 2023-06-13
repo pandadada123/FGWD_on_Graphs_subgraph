@@ -331,11 +331,11 @@ for pw in Pw:
         # print('Wasserstein distance={}, Gromov distance={} \nFused Gromov-Wasserstein distance for alpha {} = {}'.format(dw,dgw,alpha,dfgw))
 
         # %%
-        thre1 = 1e-5
+        thre1 = 1e-9
         # thre2=-0.015000 # entropic
-        thre2 = 0.001
+        thre2 = 1e-4
         
-        DFGW[num] = dfgw
+        DFGW[num] = dfgw/N
         if dfgw < thre1:
             yes1 += 1
         if dfgw < thre2:
@@ -446,7 +446,7 @@ plt.grid()
 # plt.xlabel('Size of test graph')
 # plt.xlabel('Number of features')
 plt.xlabel('Connectivity of graphs')
-plt.ylabel('Mean and STD')
+plt.ylabel('Mean and 95% confidence interval')
 # %% plot percentage
 plt.figure()
 plt.plot(np.array(Pw), np.array(Percent1),'k-x', label='exact match')
