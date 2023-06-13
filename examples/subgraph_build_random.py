@@ -335,7 +335,8 @@ for pw in Pw:
         # thre2=-0.015000 # entropic
         thre2 = 1e-4
         
-        DFGW[num] = dfgw/N
+        dfgw=dfgw/N # modified obj values 
+        DFGW[num] = dfgw
         if dfgw < thre1:
             yes1 += 1
         if dfgw < thre2:
