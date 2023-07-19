@@ -14,8 +14,24 @@ from scipy.sparse import random
 class StopError(Exception):
     pass
 
+def _delta_plus(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """Comparator function. Equation 3 in the paper.
 
-def cal_L(C1,C2):
+    Arguments:
+        x {np.array} -- an array of floats
+        y {np.array} -- an array of floats
+
+    Returns
+        np.array -- an array of floats
+    """
+
+    return np.multiply(
+        np.greater(x, y),
+        np.subtract(x, y)
+    )
+
+
+def cal_L(C1,C2):  # loss_func is not specified
     """calculate the constant matrix L
     """
     L=np.zeros([len(C1),len(C1[1]),len(C2),len(C2[1])]) # L is a 4-dim tensor constant            
@@ -25,8 +41,11 @@ def cal_L(C1,C2):
                     for jj in range(len(C2[1])-1):   # a few elements are zero, related to the dummy node
                                    c1=C1[i][ii]
                                    c2=C2[j][jj]
-                                   # np.append(L,pow((c1-c2),2))    
-                                   L[i][ii][j][jj]=pow((c1-c2),2) 
+                                   # L[i][ii][j][jj]=pow((c1-c2),2) 
+                                   # L[i][ii][j][jj]=pow(_delta_plus(c1,c2) ,2) # only consider the case when c1>c2
+                                   L[i][ii][j][jj]=_delta_plus(pow(0.5,c2),
+                                                               pow(0.5,c1)) # only consider the case when c1>c2 == 0.5^c2>0.5^c1
+                                   
     return L
     
     # Maybe another way to calculate L?                              

@@ -12,7 +12,7 @@ import sys
 
 # sys.path.append(os.path.realpath('../lib'))
 sys.path.append(os.path.realpath(
-    'E:/Master Thesis/FGWD_on_Graphs_subgraph/lib_1.0'))
+    'E:/Master Thesis/FGWD_on_Graphs_subgraph/lib_0.0'))
 
 from graph import graph_colors, draw_rel, draw_transp, Graph, wl_labeling
 import random
@@ -23,7 +23,7 @@ import copy
 from ot_distances import Fused_Gromov_Wasserstein_distance
 # from ot_distances import Fused_Gromov_Wasserstein_distance,Wasserstein_distance
 # from data_loader import load_local_data,histog,build_noisy_circular_graph
-from FGW import init_matrix,gwloss
+# from FGW import init_matrix,gwloss  # lib 0.0 no need
 # from FGW import cal_L,tensor_matrix,gwloss
 import scipy.stats as st
 
@@ -41,6 +41,7 @@ N = 10  # nodes in subgraph
 N3 = 45
 # NN3 = [65]
 Pw = np.linspace(0.1, 1, 10)
+Pw = [0.5]
 # pw2 = 0.5
 # pw1 = 0.5
 # pw2 = 0.5
@@ -164,7 +165,7 @@ def build_G1(G, N2=30, numfea=3, pw=0.5):
 # %%
 
 for pw in Pw:
-    Num = 1000 # number of random graphs
+    Num = 1 # number of random graphs
     num = 0
     yes1 = 0
     yes2 = 0
@@ -271,8 +272,8 @@ for pw in Pw:
         fea_metric = 'dirac'
         # fea_metric = 'hamming'
         # fea_metric = 'sqeuclidean'
-        # str_metrc = 'shortest_path'
-        str_metric = 'adj'
+        str_metric = 'shortest_path'
+        # str_metric = 'adj'
 
         # %% use the function from FGWD all the time
         thresh = 0.004
@@ -297,11 +298,11 @@ for pw in Pw:
         dfgw, log_FGWD, transp_FGWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
             alpha=alpha, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1, G2, p1, p2, p2_nodummy)
         
-        # fig = plt.figure(figsize=(10, 8))
-        # plt.title('FGWD coupling')
-        # draw_transp(G1, G2, transp_FGWD, shiftx=2, shifty=0.5, thresh=thresh,
-        #             swipy=True, swipx=False, with_labels=True, vmin=vmin, vmax=vmax)
-        # plt.show()
+        fig = plt.figure(figsize=(10, 8))
+        plt.title('FGWD coupling')
+        draw_transp(G1, G2, transp_FGWD, shiftx=2, shifty=0.5, thresh=thresh,
+                    swipy=True, swipx=False, with_labels=True, vmin=vmin, vmax=vmax)
+        plt.show()
 
         # %% FGWD, find alpha
         # alld=[]
