@@ -148,8 +148,7 @@ sys.path.append(ROOT_DIR)
 # Secondly we'll create a search function that returns rows from our table of target nodes that have a non zero similarity score.
 
 # In[6]:
-
-query_labels = ['guardians', 'groot', 'star']
+query_labels = ['guardians', 'groot', 'star','a','a'] # 4 features, 5 nodes
 # target_labels = ['guardians', 'groot', 'star', 'guardians2']
 
 # Generate a random string of given length
@@ -157,8 +156,10 @@ def random_string(length):
     letters = string.ascii_lowercase
     return ''.join(random.choice(letters) for _ in range(length))
 
-# Create a list of 97 random strings
-target_labels = query_labels + [random_string(random.randint(1, 10)) for _ in range(97)]
+# # Create a list of 97 random strings
+# target_labels = query_labels + [random_string(random.randint(1, 10)) for _ in range(97)]
+target_labels = query_labels + [random.choice(query_labels) for _ in range(100-5)]
+
 
 # create nodes_df by hand 
 # Create a dictionary with the desired data
@@ -177,7 +178,7 @@ nodes_df = pd.DataFrame(data1)
 
 #%%
 start_range = 1000
-end_range = 1100+1000
+end_range = 1100
 
 # Create a list of integers in the specified range
 integers = list(range(start_range, end_range + 1))
@@ -186,19 +187,18 @@ integers = list(range(start_range, end_range + 1))
 # random.shuffle(integers)
 
 # Create two lists of length 
-list_a = [1000,1000]
-list_b = [1001,1002]
+# list_a = [1000,1000]
+# list_b = [1001,1002]
+list_a = []
+list_b = []
 
-# for _ in range(5000-2):
-for _ in range(100-2):
+for a in range(1000,1100):
     # a = random.choice(integers)
     # b = random.choice(integers)
-    a = integers[_+1]
-    b = a+1
-    
-    
-    list_a.append(a)
-    list_b.append(b)
+    # a = integers[_+1]
+    for b in range(a+1,1100):
+        list_a.append(a)
+        list_b.append(b)
 
 # Data for the DataFrame (the ids should be the same as data1)
 data2 = {
@@ -348,11 +348,18 @@ with fornax.Connection('sqlite:///mydb.sqlite') as conn:
     #    query_graph.add_nodes(id_src=query_labels)
     # since id_src can use any unique hashable items
 
-    edges = [
-        (0, 1), # edge between groot and guardians
-        (0, 2)  # edge between star and guardians
+    # edges = [
+    #     (0, 1), # edge between groot and guardians
+    #     (0, 2)  # edge between star and guardians
+    # ]
+    
+    # if target graph is fully connected, so as the query graph
+    edges = [ (0, 1), (0,2) , (0,3), (0,4),
+             (1,2), (1,3), (1,4),
+             (2,3), (2,4),
+             (3,4)
     ]
-
+        
     sources, targets = zip(*edges)
     query_graph.add_edges(sources, targets)
 
