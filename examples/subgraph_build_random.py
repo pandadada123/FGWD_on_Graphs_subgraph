@@ -14,7 +14,7 @@ os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 # sys.path.append(os.path.realpath('../lib'))
 sys.path.append(os.path.realpath(
-    'E:/Master Thesis/FGWD_on_Graphs_subgraph/lib_0.0'))
+    'E:/Master Thesis/FGWD_on_Graphs_subgraph/lib1'))
 
 from graph import graph_colors, draw_rel, draw_transp, Graph, wl_labeling
 import random
