@@ -10,9 +10,11 @@ import numpy as np
 import os
 import sys
 
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
+
 # sys.path.append(os.path.realpath('../lib'))
 sys.path.append(os.path.realpath(
-    'E:/Master Thesis/FGWD_on_Graphs_subgraph/lib_1.0'))
+    'E:/Master Thesis/FGWD_on_Graphs_subgraph/lib_0.0'))
 
 from graph import graph_colors, draw_rel, draw_transp, Graph, wl_labeling
 import random
@@ -28,7 +30,7 @@ from ot_distances import Fused_Gromov_Wasserstein_distance
 import scipy.stats as st
 import math
 
-N = 10  # nodes in subgraph
+N = 5  # nodes in subgraph
 # NN =  [5,10,15,25,35,45,55]
 # NN =[10]
 # NN = [10]
@@ -37,14 +39,17 @@ N = 10  # nodes in subgraph
 # NN2 =  [75,70,65,55,45,35,25]
 # NN2=[5]
 # N3 = [x+N for x in NN2]
-NN3 = [15,20,25,35,45,55,65,75,85,95]
+# NN3 = [15,20,25,35,45,55,65,75,85,95]
+NN3 = [15,20,25]
+# NN3 = [15,45,75]
 # N3 = N+N2
-# N3 = 45
-NN3 = [45]
+# N3 = 500
+# NN3 = [45]
 # Pw = np.linspace(0.1, 1, 10)
-# Pw = [0.5]
-pw1 = 0.5  # query
-pw2 = 0.5  # target
+# Pw = [0.1]
+pw1 = 0.1  # query
+# pw1 = np.random.choice(np.linspace(0.1, 1, 10))
+pw2 = 0.1  # target
 # Sigma2=[0.01,0.1,0.5,1,2,3,4]
 # Sigma2=[0.01]
 # sigma1=0.1
@@ -55,6 +60,13 @@ numfea = 4
 
 # Alpha = np.linspace(0, 1, 11)
 
+Dia = [i for i in range(1, N)]
+
+thre1 = 1e-9
+# thre2=-0.015000 # entropic
+thre2 = 1e-4       
+        
+Is_fig = 0
 Is_info = 0
 
 DFGW_set = []
@@ -165,11 +177,12 @@ def build_G1(G, N2=30, numfea=3, pw=0.5):
 # %%
 
 for N3 in NN3:
-    Num = 1 # number of random graphs
+    Num = 100 # number of random graphs
     num = 0
     yes1 = 0
     yes2 = 0
     DFGW = np.zeros(Num)
+    DIA = []
     while num < Num:
 
         plt.close("all")
@@ -246,16 +259,16 @@ for N3 in NN3:
             print("'The query graph is not connected.'")
             continue
         # %% plot the graphs
-        vmin = 0
-        vmax = 9  # the range of color
-    
-        plt.figure(figsize=(8, 5))
-        # create some bugs in the nx.draw_networkx, don't know why.
-        draw_rel(g1, vmin=vmin, vmax=vmax, with_labels=True, draw=False)
-        draw_rel(g2_nodummy, vmin=vmin, vmax=vmax,
-                  with_labels=True, shiftx=3, draw=False)
-        plt.title('Original target graph and query graph: Color indicates the label')
-        plt.show()
+        # if Is_fig == 1:
+        #     vmin = 0
+        #     vmax = 9  # the range of color
+        #     plt.figure(figsize=(8, 5))
+        #     # create some bugs in the nx.draw_networkx, don't know why.
+        #     draw_rel(g1, vmin=vmin, vmax=vmax, with_labels=True, draw=False)
+        #     draw_rel(g2_nodummy, vmin=vmin, vmax=vmax,
+        #               with_labels=True, shiftx=3, draw=False)
+        #     plt.title('Original target graph and query graph: Color indicates the label')
+        #     plt.show()
         
         #%% Using the diameter constraint, but the sliding subgraph grows up quickly 
         # def grow_subgraph(graph, center_node, target_diameter):
@@ -296,7 +309,30 @@ for N3 in NN3:
         # g2_diameter = nx.diameter(g2_nodummy)
         # g1_subgraph_list = find_subgraph_with_diameter(g1, diameter=g2_diameter)
 
-        #%% Using diameter/2 neighborhood hops 
+
+        #%% sliding window 
+        # diameter of query 
+        g2_diameter = nx.diameter(g2_nodummy)
+        
+        # define a center, return the longest possible length of path from the center node
+        def find_center_with_smallest_avg_hops(graph):
+            min_avg_hops = float('inf')
+            center_node_query = None
+            
+            for node in graph.nodes():
+                avg_hops = sum(nx.shortest_path_length(graph, source=node).values()) / (len(graph.nodes()) - 1)
+                
+                if avg_hops < min_avg_hops:
+                    min_avg_hops = avg_hops
+                    center_node_query = node
+                    
+            longest_path_center = max(nx.shortest_path_length(graph, source=center_node_query).values())
+            
+            return longest_path_center
+        
+        g2_longest_path_center = find_center_with_smallest_avg_hops(g2_nodummy)
+        
+        # Using h-diameter neighborhood hops 
         def create_h_hop_subgraph(graph, center_node, h):
             subgraph_nodes = set([center_node])
             neighbors = set([center_node])
@@ -309,16 +345,16 @@ for N3 in NN3:
                 neighbors = new_neighbors
         
             return graph.subgraph(subgraph_nodes)
-       
-        g2_diameter = nx.diameter(g2_nodummy)
+        
+        # go over every node in target
         g1_subgraph_list=[]
-
         for center_node in g1.nodes():
              # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter/2))  # sometimes could not include the subgraph in the big graph
-             induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter))
+             # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter))
+             induced_subgraph = create_h_hop_subgraph(g1, center_node, h = g2_longest_path_center)
              g1_subgraph_list.append(induced_subgraph)                   
        
-#%%      
+        #%%      
         dfgw_sub = []
         transp_FGWD_sub = []
         G1_subgraph_sub = []
@@ -343,16 +379,17 @@ for N3 in NN3:
             #     continue
     
             # %% plot the graphs
-            vmin = 0
-            vmax = 9  # the range of color
-    
-            plt.figure(figsize=(8, 5))
-            # create some bugs in the nx.draw_networkx, don't know why.
-            draw_rel(g1_subgraph, vmin=vmin, vmax=vmax, with_labels=True, draw=False)
-            draw_rel(g2_nodummy, vmin=vmin, vmax=vmax,
-                      with_labels=True, shiftx=3, draw=False)
-            plt.title('Sliding subgraph and query graph: Color indicates the label')
-            plt.show()
+            if Is_fig == 1:
+                vmin = 0
+                vmax = 9  # the range of color
+        
+                plt.figure(figsize=(8, 5))
+                # create some bugs in the nx.draw_networkx, don't know why.
+                draw_rel(g1_subgraph, vmin=vmin, vmax=vmax, with_labels=True, draw=False)
+                draw_rel(g2_nodummy, vmin=vmin, vmax=vmax,
+                          with_labels=True, shiftx=3, draw=False)
+                plt.title('Sliding subgraph and query graph: Color indicates the label')
+                plt.show()
     
             # %% weights and feature metric
             p1 = ot.unif(len(G1_subgraph.nodes()))
@@ -427,29 +464,30 @@ for N3 in NN3:
         
         transp_FGWD_sub_min = transp_FGWD_sub[min_index]
         G1_subgraph_min = G1_subgraph_sub[min_index]
-     
-        fig = plt.figure(figsize=(10, 8))
-        plt.title('Optimal FGWD coupling')
-        draw_transp(G1_subgraph_min, G2, transp_FGWD_sub_min, shiftx=2, shifty=0.5, thresh=thresh,
-                    swipy=True, swipx=False, with_labels=True, vmin=vmin, vmax=vmax)
-        plt.show()
         
-        # %%
-        thre1 = 1e-9
-        # thre2=-0.015000 # entropic
-        thre2 = 1e-4
+        if Is_fig == 1:
+            fig = plt.figure(figsize=(10, 8))
+            plt.title('Optimal FGWD coupling')
+            draw_transp(G1_subgraph_min, G2, transp_FGWD_sub_min, shiftx=2, shifty=0.5, thresh=thresh,
+                        swipy=True, swipx=False, with_labels=True, vmin=vmin, vmax=vmax)
+            plt.show()
         
+
+        #%%
         dgfw_sub_min_norm=dgfw_sub_min/N # modified obj values 
         DFGW[num] = dgfw_sub_min_norm
         if dgfw_sub_min_norm < thre1:
             yes1 += 1
         if dgfw_sub_min_norm < thre2:
             yes2 += 1
-
-        num += 1
+            
+        DIA.append(g2_diameter) # for different diameter
         
+        
+        num += 1
         # print(num)
-
+        
+        
         # %% check the features and structure
         if Is_info:
             index = np.argwhere(transp_FGWD[:, 0:-1] > 1e-3)
@@ -539,6 +577,25 @@ for N3 in NN3:
     Lower.append(lower)
     Upper.append(upper)
     
+    #%% for different diameter
+    # # Create empty lists for each category
+    # category_arrays = [[] for _ in range(N)]
+    
+    # # Iterate through numbers and append to respective category arrays
+    # for number, category in zip(DFGW, DIA):
+    #     category_arrays[category - 1].append(number)
+    
+    # # Print the arrays for each category
+    # for i, category_array in enumerate(category_arrays):    
+    #     Mean.append(np.mean(category_array))
+    #     STD.append(np.std(category_array))
+    #     Percent1.append(len([num for num in category_array if num < thre1])/len(category_array))
+    #     Percent2.append(len([num for num in category_array if num < thre2])/len(category_array))
+    #     #create 95% confidence interval for population mean weight
+    #     lower, upper = st.norm.interval(confidence=0.95, loc=np.mean(category_array), scale=st.sem(category_array))
+    #     Lower.append(lower)
+    #     Upper.append(upper)
+
 # %% boxplot
 fig, ax = plt.subplots()
 # ax.set_title('Hide Outlier Points')
@@ -546,7 +603,7 @@ ax.boxplot(DFGW_set, showfliers=False, showmeans=False)
 # %% plot mean and STD
 plt.figure()
 plt.plot(np.array(NN3), np.array(Mean), 'k-+')
-# plt.fill_between(np.array(Pw), np.array(Mean)-np.array(STD), np.array(Mean)+np.array(STD), alpha=0.5) # alpha here is transparency
+# plt.fill_between(np.array(NN3), np.array(Mean)-np.array(STD), np.array(Mean)+np.array(STD), alpha=0.5) # alpha here is transparency
 plt.fill_between(np.array(NN3), np.array(Lower), np.array(Upper), facecolor = 'k',alpha=0.5) # alpha here is transparency
 plt.grid()
 # plt.xlabel('Size of test graph')
