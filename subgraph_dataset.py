@@ -40,12 +40,20 @@ thre2 = 1e-4
         
 Is_fig = 0
 Is_info = 0
+Is_create_query = 0
+Is_fea_noise = 1
+Is_str_noise = 1
+
+mean_fea = 0
+std_fea = 0.1
+str_mean = 0
+str_std = 0.1
 
 Num = 1 # number of random graphs
-fea_metric = 'dirac'
+# fea_metric = 'dirac'
 # fea_metric = 'hamming'
 # fea_metric = 'sqeuclidean'
-# fea_metric = 'jaccard'
+fea_metric = 'jaccard'
 # str_metric = 'shortest_path'  # remember to change lib0 and cost matrix
 str_metric = 'adj'
 
@@ -57,14 +65,69 @@ STD = []
 Lower = []
 Upper = []
 
-NumQ = 1 # Number of query graphs to generate
-g1 = pickle.load(open('data\G_hprd.pickle', 'rb'))
-# g2_nodummy = pickle.load(open('G_query2.pickle', 'rb'))
+# g1 = pickle.load(open('\home\pan\dataset\data_pickle\imdb\G_imdb.pickle', 'rb'))
+# g2_nodummy = pickle.load(open('\home\pan\dataset\data_pickle\imdb\Q_imdb.pickle', 'rb'))
+g1 = pickle.load(open('E:\Master Thesis\dataset\data_pickle\yago\G_yago.pickle', 'rb'))
+g2_nodummy = pickle.load(open('E:\Master Thesis\dataset\data_pickle\yago\Q_yago.pickle', 'rb'))
 
 plt.close("all")
         
+NumQ = 1 # Number of query graphs
 
-    
+#%% add noise to the query
+def add_noise_to_query(g,mean_fea,std_fea,str_mean,str_std,
+                       Is_fea_noise,Is_str_noise):    
+    if Is_fea_noise: # Add label noise
+        if fea_metric == 'jaccard':
+            for node in g.nodes():
+                current_string = g.nodes[node]['attr_name']
+                # Convert the input string to a list of Unicode code points
+                code_points = [ord(char) for char in current_string]
+            
+                # Apply Gaussian noise to each code point
+                noisy_code_points = [
+                    int(round(code + np.random.normal(mean_fea, std_fea)))
+                    for code in code_points
+                ]
+            
+                # Ensure that code points are within valid Unicode range (32 to 126)
+                noisy_code_points = [
+                    min(max(code, 32), 126)
+                    for code in noisy_code_points
+                ]
+            
+                # Convert the noisy code points back to a string
+                noisy_string = ''.join([chr(code) for code in noisy_code_points])
+                
+                g.nodes[node]['attr_name'] = noisy_string
+
+        elif fea_metric == 'dirac':
+            for node in g.nodes():
+                current_value = g.nodes[node]['attr_name']
+                noise = np.random.normal(mean_fea, std_fea)
+                new_value = current_value + noise
+                g.nodes[node]['attr_name'] = round(new_value)  # still int value
+            
+    if Is_str_noise: # Add structural noise
+        # Generate random values for edge insertions and deletions
+        num_insertions = max(0, int(np.random.normal(str_mean/2, str_std)))
+        num_deletions = max(0, int(np.random.normal(str_mean/2, str_std)))
+        
+        # Structural noise: Edge insertions
+        for _ in range(num_insertions):
+            node1, node2 = random.sample(g.nodes(), 2)
+            if not g.has_edge(node1, node2):
+                g.add_edge(node1, node2)
+        
+        # Structural noise: Edge deletions
+        for _ in range(num_deletions):
+            edges = list(g.edges())
+            if edges:
+                edge_to_delete = random.choice(edges)
+                g.remove_edge(*edge_to_delete)
+                
+    return g
+
 #%% create connected subgraphs/query graphs
 
 # Number of nodes in each subgraph
@@ -82,27 +145,35 @@ else:
     
     for num in range(NumQ):
         print("num=",num)
-        # Randomly select a starting node
-        start_node = random.choice(list(g1.nodes()))
-
-        # Initialize a subgraph with the starting node
-        subgraph = nx.Graph()
-        subgraph.add_node(start_node, attr_name = g1.nodes[start_node].get("attr_name",None) )
-
-        # Use a breadth-first search (BFS) to add connected nodes to the subgraph
-        queue = [start_node]
-        while len(subgraph) < num_nodes_per_subgraph and queue:
-            current_node = queue.pop(0)
-            neighbors = list(g1.neighbors(current_node))
-            random.shuffle(neighbors)  # Shuffle neighbors for randomness
-            for neighbor in neighbors:
-                if neighbor not in subgraph and len(subgraph) < num_nodes_per_subgraph:
-                    subgraph.add_node(neighbor, attr_name = g1.nodes[neighbor].get("attr_name",None) )
-                    subgraph.add_edge(current_node, neighbor)
-                    queue.append(neighbor)
+        #%% create connected query graphs by BFS
+        if Is_create_query:
+            # Randomly select a starting node
+            start_node = random.choice(list(g1.nodes()))
     
+            # Initialize a subgraph with the starting node
+            subgraph = nx.Graph()
+            subgraph.add_node(start_node, attr_name = g1.nodes[start_node].get("attr_name",None) )
+    
+            # Use a breadth-first search (BFS) to add connected nodes to the subgraph
+            queue = [start_node]
+            while len(subgraph) < num_nodes_per_subgraph and queue:
+                current_node = queue.pop(0)
+                neighbors = list(g1.neighbors(current_node))
+                random.shuffle(neighbors)  # Shuffle neighbors for randomness
+                for neighbor in neighbors:
+                    if neighbor not in subgraph and len(subgraph) < num_nodes_per_subgraph:
+                        subgraph.add_node(neighbor, attr_name = g1.nodes[neighbor].get("attr_name",None) )
+                        subgraph.add_edge(current_node, neighbor)
+                        queue.append(neighbor)
+    
+            g2_nodummy = subgraph
+        
+        #%% add noise to query
+        if Is_fea_noise or Is_str_noise:
+            g2_nodummy = add_noise_to_query(g2_nodummy, mean_fea = mean_fea, std_fea = std_fea, str_mean= str_mean, str_std= str_std,
+                                   Is_fea_noise=Is_fea_noise, Is_str_noise=Is_str_noise)
             
-        g2_nodummy = subgraph
+#%%
         N = len(g2_nodummy.nodes)
         # G1 = Graph(g1)
         G2_nodummy = Graph(g2_nodummy)
@@ -227,8 +298,12 @@ else:
                 continue
             
             G2 = copy.deepcopy(G2_nodummy)
-            G2.add_attributes({len(G2.nodes()): 0})  # add dummy      
-            # G2.add_attributes({len(G2.nodes()): "0"})  # add dummy            
+            
+            if fea_metric == 'jaccard':
+                G2.add_attributes({len(G2.nodes()): "0"})  # add dummy            
+            else:
+                G2.add_attributes({len(G2.nodes()): 0})  # add dummy      
+            
     
             # %% plot the graphs
             if Is_fig == 1:

@@ -38,22 +38,22 @@ N = 5  # nodes in subgraph
 # NN2 =  [75,70,65,55,45,35,25]
 # NN2=[5]
 # N3 = [x+N for x in NN2]
-NN3 = [15,20,25,35,45,55,65,75,85,95]
+# NN3 = [15,20,25,35,45,55,65,75,85,95]
 # NN3 = [15,20,25]
 # NN3 = [15,45,75]
 # N3 = N+N2
 # N3 = 500
-# NN3 = [1000]
+NN3 = [45]
 # Pw = np.linspace(0.1, 1, 10)
 # Pw = [0.1]
-pw1 = 0.5  # query
+pw1 = 0.1  # query
 # pw1 = np.random.choice(np.linspace(0.1, 1, 10))
-pw2 = 0.5  # target
+pw2 = 0.1  # target
 # Sigma2=[0.01,0.1,0.5,1,2,3,4]
 # Sigma2=[0.01]
 # sigma1=0.1
 # sigma2=0.1
-numfea = 45
+numfea = 15
 # NumFea = list(range(1, 11))  # from 1 to 20
 # NumFea = [2]
 
@@ -67,13 +67,21 @@ thre2 = 1e-4
         
 Is_fig = 0
 Is_info = 0
+Is_fea_noise = 1
+Is_str_noise = 1
 
-Num = 100 # number of random graphs
+Num = 1 # number of random graphs
 fea_metric = 'dirac'
 # fea_metric = 'hamming'
 # fea_metric = 'sqeuclidean'
+# fea_metric = 'jaccard'
 # str_metric = 'shortest_path'  # remember to change lib0 and cost matrix
 str_metric = 'adj'
+
+mean_fea = 0
+std_fea = 0.1
+str_mean = 0
+str_std = 0.1
 
 DFGW_set = []
 Percent1 = []
@@ -179,7 +187,61 @@ def build_G1(G, N2=30, numfea=3, pw=0.5):
 
     return G
 
+#%% add noise to the query
+def add_noise_to_query(g,mean_fea,std_fea,str_mean,str_std,
+                       Is_fea_noise,Is_str_noise):    
+    if Is_fea_noise: # Add label noise
+        if fea_metric == 'jaccard':
+            for node in g.nodes():
+                current_string = g.nodes[node]['attr_name']
+                # Convert the input string to a list of Unicode code points
+                code_points = [ord(char) for char in current_string]
+            
+                # Apply Gaussian noise to each code point
+                noisy_code_points = [
+                    int(round(code + np.random.normal(mean_fea, std_fea)))
+                    for code in code_points
+                ]
+            
+                # Ensure that code points are within valid Unicode range (32 to 126)
+                noisy_code_points = [
+                    min(max(code, 32), 126)
+                    for code in noisy_code_points
+                ]
+            
+                # Convert the noisy code points back to a string
+                noisy_string = ''.join([chr(code) for code in noisy_code_points])
+                
+                g.nodes[node]['attr_name'] = round(noisy_string)
 
+        elif fea_metric == 'dirac':
+            for node in g.nodes():
+                current_value = g.nodes[node]['attr_name']
+                noise = np.random.normal(mean_fea, std_fea)
+                new_value = current_value + noise
+                g.nodes[node]['attr_name'] = round(new_value)  # still int value
+            
+    if Is_str_noise: # Add structural noise
+        # Generate random values for edge insertions and deletions
+        num_insertions = max(0, int(np.random.normal(str_mean/2, str_std)))
+        num_deletions = max(0, int(np.random.normal(str_mean/2, str_std)))
+        
+        # Structural noise: Edge insertions
+        for _ in range(num_insertions):
+            node1, node2 = random.sample(g.nodes(), 2)
+            if not g.has_edge(node1, node2):
+                g.add_edge(node1, node2)
+        
+        # Structural noise: Edge deletions
+        for _ in range(num_deletions):
+            edges = list(g.edges())
+            if edges:
+                edge_to_delete = random.choice(edges)
+                g.remove_edge(*edge_to_delete)
+                
+    return g
+
+    
 # %%
 
 for N3 in NN3:
@@ -259,11 +321,17 @@ for N3 in NN3:
         g1 = G1.nx_graph
         g2_nodummy = G2_nodummy.nx_graph
         
+        #%% add noise to query
+        if Is_fea_noise or Is_str_noise:
+            g2_nodummy = add_noise_to_query(g2_nodummy, mean_fea = mean_fea, std_fea = std_fea, str_mean= str_mean, str_std= str_std,
+                                   Is_fea_noise=Is_fea_noise, Is_str_noise=Is_str_noise)            
+            
 #%%     only allow the query is connected
         is_connected = nx.is_connected(g2_nodummy)
         if is_connected == 0:
             print("'The query graph is not connected.'")
             continue
+        
         # %% plot the graphs
         # if Is_fig == 1:
         #     vmin = 0
