@@ -239,6 +239,27 @@ class Fused_Gromov_Wasserstein_distance():
         #     x2=None
         #     gofeature=False
         
+<<<<<<< 69bd6c6e76a0039b0f56a6bd1e3df676e6e87afd
+=======
+        def node_scoring_function(first: str, second: str): 
+            """ node scoring function takes two strings and returns a 
+                score in the range 0 <= score <= 1
+            """
+            first_, second_ = sorted((first.lower(), second.lower()), key=len) # put the shorter string in the first place
+            # if first is not a substring of second: score = 0
+            if not first_ in second_:  # they have no intersection
+                # return 0
+                score = 0
+            # otherwise use the relative difference between
+            # the two lengths
+            score = len(second_) - len(first_)
+            score /= max(len(first_), len(second_))
+            score = 1. - score # jaccard similarity, 1 means they are the same
+            
+            score = 1. - score # jaccard dissimilarity, 0 means they are the same
+            
+            return score
+>>>>>>> reorganize; add subgraph_dataset; Wass filtering
         
         if gofeature : 
             M=np.zeros((C1.shape[0],C2.shape[0])) # initialization

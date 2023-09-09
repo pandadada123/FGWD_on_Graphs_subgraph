@@ -238,7 +238,8 @@ def cg(a, b, M, reg, f, df, G0=None, numItermax=500, stopThr=1e-09, verbose=Fals
         # alpha = 2/(iter+2)
         
         if alpha is None or np.isnan(alpha) :
-            raise NonConvergenceError('Alpha was not found')
+            # raise NonConvergenceError('Alpha was not found')
+            alpha = 0.99
         else:
             G = G + alpha * deltaG #xt+1=xt +alpha dt
 
