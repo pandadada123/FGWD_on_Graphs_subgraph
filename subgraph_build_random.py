@@ -13,16 +13,15 @@ import sys
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 # sys.path.append(os.path.realpath('../lib'))
-sys.path.append(os.path.realpath(
-    'E:/Master Thesis/FGWD_on_Graphs_subgraph/lib1'))
+# sys.path.append(os.path.realpath('E:/Master Thesis/FGWD_on_Graphs_subgraph/lib1'))
 
-from graph import graph_colors, draw_rel, draw_transp, Graph, wl_labeling
+from lib1.graph import graph_colors, draw_rel, draw_transp, Graph, wl_labeling
 import random
 import ot
 import networkx as nx
 import matplotlib.pyplot as plt
 import copy
-from ot_distances import Fused_Gromov_Wasserstein_distance
+from lib1.ot_distances import Fused_Gromov_Wasserstein_distance
 # from ot_distances import Fused_Gromov_Wasserstein_distance,Wasserstein_distance
 # from data_loader import load_local_data,histog,build_noisy_circular_graph
 # from FGW import init_matrix,gwloss  # lib 0.0 no need
@@ -39,22 +38,22 @@ N = 5  # nodes in subgraph
 # NN2 =  [75,70,65,55,45,35,25]
 # NN2=[5]
 # N3 = [x+N for x in NN2]
-# NN3 = [15,20,25,35,45,55,65,75,85,95]
-NN3 = [15,20,25]
+NN3 = [15,20,25,35,45,55,65,75,85,95]
+# NN3 = [15,20,25]
 # NN3 = [15,45,75]
 # N3 = N+N2
 # N3 = 500
-# NN3 = [45]
+# NN3 = [1000]
 # Pw = np.linspace(0.1, 1, 10)
 # Pw = [0.1]
-pw1 = 0.1  # query
+pw1 = 0.5  # query
 # pw1 = np.random.choice(np.linspace(0.1, 1, 10))
-pw2 = 0.1  # target
+pw2 = 0.5  # target
 # Sigma2=[0.01,0.1,0.5,1,2,3,4]
 # Sigma2=[0.01]
 # sigma1=0.1
 # sigma2=0.1
-numfea = 4
+numfea = 45
 # NumFea = list(range(1, 11))  # from 1 to 20
 # NumFea = [2]
 
@@ -68,6 +67,13 @@ thre2 = 1e-4
         
 Is_fig = 0
 Is_info = 0
+
+Num = 100 # number of random graphs
+fea_metric = 'dirac'
+# fea_metric = 'hamming'
+# fea_metric = 'sqeuclidean'
+# str_metric = 'shortest_path'  # remember to change lib0 and cost matrix
+str_metric = 'adj'
 
 DFGW_set = []
 Percent1 = []
@@ -177,7 +183,7 @@ def build_G1(G, N2=30, numfea=3, pw=0.5):
 # %%
 
 for N3 in NN3:
-    Num = 100 # number of random graphs
+    
     num = 0
     yes1 = 0
     yes2 = 0
@@ -343,23 +349,29 @@ for N3 in NN3:
                     new_neighbors.update(graph.neighbors(node))
                 subgraph_nodes.update(new_neighbors)
                 neighbors = new_neighbors
+                
+            h_hop_subgraph = graph.subgraph(subgraph_nodes).copy()
         
-            return graph.subgraph(subgraph_nodes)
+            return h_hop_subgraph
         
-        # go over every node in target
+        #%% go over every node in target
         g1_subgraph_list=[]
-        for center_node in g1.nodes():
-             # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter/2))  # sometimes could not include the subgraph in the big graph
-             # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter))
-             induced_subgraph = create_h_hop_subgraph(g1, center_node, h = g2_longest_path_center)
-             g1_subgraph_list.append(induced_subgraph)                   
-       
-        #%%      
         dfgw_sub = []
         transp_FGWD_sub = []
         G1_subgraph_sub = []
+        dw_sub = []
+
         
-        for g1_subgraph in g1_subgraph_list:
+        ii=0
+        for center_node in g1.nodes():
+            print(ii)
+            ii+=1
+        
+            # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter/2))  # sometimes could not include the subgraph in the big graph
+            # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter))
+            g1_subgraph = create_h_hop_subgraph(g1, center_node, h = g2_longest_path_center)
+            g1_subgraph_list.append(g1_subgraph)                   
+
             G1_subgraph = Graph(g1_subgraph)
             
             if len(G1_subgraph.nodes()) < len(G2_nodummy.nodes()):  
@@ -368,15 +380,6 @@ for N3 in NN3:
             
             G2 = copy.deepcopy(G2_nodummy)
             G2.add_attributes({len(G2.nodes()): 0})  # add dummy            
-    
-            # %% check if every pair of nodes have path
-            # n1 = len(G1.nodes())
-            # try:
-            #     for ii in range(n1):
-            #           nx.shortest_path_length(g1,source=0,target=ii)
-            # except:
-            #     print("oops2")
-            #     continue
     
             # %% plot the graphs
             if Is_fig == 1:
@@ -397,11 +400,7 @@ for N3 in NN3:
             p2_nodummy = 1/len(G1_subgraph.nodes()) * np.ones([len(G2_nodummy.nodes())])
             p2 = np.append(p2_nodummy, 1-sum(p2_nodummy))
     
-            fea_metric = 'dirac'
-            # fea_metric = 'hamming'
-            # fea_metric = 'sqeuclidean'
-            # str_metric = 'shortest_path'
-            str_metric = 'adj'
+            
     
             # %% use the function from FGWD all the time
             thresh = 0.004
@@ -420,9 +419,21 @@ for N3 in NN3:
             # plt.title('GWD coupling')
             # draw_transp(G1,G2,transp_GWD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
             # plt.show()
-    
+            
+            #%% Wasserstein filtering
+            epsilon = 1e-9
+            alpha = 0
+            dw, log_WD, transp_WD, M, C1, C2  = Fused_Gromov_Wasserstein_distance(
+                alpha=alpha, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy)
+            
+            if dw > epsilon:
+                print("filter out")
+                continue
+            
+            dw_sub.append(dw)
+            
             # FGWD
-            alpha = 0.5
+            alpha = 0.2
             dfgw, log_FGWD, transp_FGWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
                 alpha=alpha, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy)
             
@@ -465,7 +476,16 @@ for N3 in NN3:
         transp_FGWD_sub_min = transp_FGWD_sub[min_index]
         G1_subgraph_min = G1_subgraph_sub[min_index]
         
+        dw_sub_min = min(dw_sub)
+        
+        print("FGWD", dgfw_sub_min)
+        # print("transp", transp_FGWD_sub_min)
+        print("WD", dw_sub_min)
+
+
         if Is_fig == 1:
+            vmin = 0
+            vmax = 9  # the range of color
             fig = plt.figure(figsize=(10, 8))
             plt.title('Optimal FGWD coupling')
             draw_transp(G1_subgraph_min, G2, transp_FGWD_sub_min, shiftx=2, shifty=0.5, thresh=thresh,

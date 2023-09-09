@@ -1,9 +1,9 @@
 import ot
-import FGW as fgw
+import lib1.FGW as fgw
 import numpy as np
 import time
-from graph import NoAttrMatrix
-from utils import hamming_dist
+from lib1.graph import NoAttrMatrix
+from lib1.utils import hamming_dist
 import networkx as nx
 import sys
 
@@ -239,8 +239,6 @@ class Fused_Gromov_Wasserstein_distance():
         #     x2=None
         #     gofeature=False
         
-<<<<<<< 69bd6c6e76a0039b0f56a6bd1e3df676e6e87afd
-=======
         def node_scoring_function(first: str, second: str): 
             """ node scoring function takes two strings and returns a 
                 score in the range 0 <= score <= 1
@@ -259,7 +257,6 @@ class Fused_Gromov_Wasserstein_distance():
             score = 1. - score # jaccard dissimilarity, 0 means they are the same
             
             return score
->>>>>>> reorganize; add subgraph_dataset; Wass filtering
         
         if gofeature : 
             M=np.zeros((C1.shape[0],C2.shape[0])) # initialization
@@ -307,6 +304,14 @@ class Fused_Gromov_Wasserstein_distance():
                         else: 
                             M[i][j]=sum([pow(f1-f2 ,2)])
                         
+            elif self.features_metric=='jaccard':
+                for i in range(n1):
+                    for j in range(n2):
+                        key1 = Keys1[i]
+                        key2 = Keys2[j] 
+                        f1 = nodes1[key1]['attr_name'] 
+                        f2 = nodes2[key2]['attr_name']
+                        M[i][j]=node_scoring_function(f1, f2)
                 
             # else:
                 # M=ot.dist(x1,x2,metric=self.features_metric)
