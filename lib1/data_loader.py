@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from graph import Graph,wl_labeling
+from lib1.graph import Graph,wl_labeling
 import networkx as nx
-from utils import per_section,indices_to_one_hot
+from lib1.utils import per_section,indices_to_one_hot
 from collections import defaultdict
 import numpy as np
 import math
