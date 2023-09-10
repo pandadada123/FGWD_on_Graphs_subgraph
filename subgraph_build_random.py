@@ -28,6 +28,7 @@ from lib1.ot_distances import Fused_Gromov_Wasserstein_distance
 # from FGW import cal_L,tensor_matrix,gwloss
 import scipy.stats as st
 import math
+import string
 
 N = 5  # nodes in subgraph
 # NN =  [5,10,15,25,35,45,55]
@@ -46,9 +47,9 @@ N = 5  # nodes in subgraph
 NN3 = [45]
 # Pw = np.linspace(0.1, 1, 10)
 # Pw = [0.1]
-pw1 = 0.1  # query
+pw1 = 0.5  # query
 # pw1 = np.random.choice(np.linspace(0.1, 1, 10))
-pw2 = 0.1  # target
+pw2 = 0.5  # target
 # Sigma2=[0.01,0.1,0.5,1,2,3,4]
 # Sigma2=[0.01]
 # sigma1=0.1
@@ -67,21 +68,21 @@ thre2 = 1e-4
         
 Is_fig = 0
 Is_info = 0
-Is_fea_noise = 1
-Is_str_noise = 1
+Is_fea_noise = 0
+Is_str_noise = 0
 
-Num = 1 # number of random graphs
-fea_metric = 'dirac'
+Num = 100 # number of random graphs
+# fea_metric = 'dirac'
 # fea_metric = 'hamming'
 # fea_metric = 'sqeuclidean'
-# fea_metric = 'jaccard'
+fea_metric = 'jaccard'
 # str_metric = 'shortest_path'  # remember to change lib0 and cost matrix
 str_metric = 'adj'
 
 mean_fea = 0
-std_fea = 0.1
+std_fea = 0
 str_mean = 0
-str_std = 0.1
+str_std = 0
 
 DFGW_set = []
 Percent1 = []
@@ -128,28 +129,43 @@ def build_fully_graph(N=30, numfea=3):
 # pw is the possibility that one edge is connected
 
 
-def build_comunity_graph(N=30, numfea=3, pw=0.5):
-    # v=mu+sigma*np.random.randn(N);
-    # v=np.int_(np.floor(v)) # discrete attributes
+def build_comunity_graph(N=30, numfea=3, pw=0.5, fea_metric= 'dirac'):
     g = Graph()
     g.add_nodes(list(range(N)))
-    # Fea = np.linspace(0,20,numfea)
-    Fea = list(range(0, numfea))
-    for i in range(N):
-        # g.add_one_attribute(i,v[i])
-        fea = random.choice(Fea)
-        g.add_one_attribute(i, fea)
-        for j in range(i+1, N):
-            if j != i:
-                r = np.random.rand()
-                if r < pw:
-                    g.add_edge((i, j))
+    
+    if fea_metric == 'dirac' or fea_metric == 'sqeuclidean':
+        # v=mu+sigma*np.random.randn(N);
+        # v=np.int_(np.floor(v)) # discrete attributes
+        # Fea = np.linspace(0,20,numfea)
+        Fea = list(range(0, numfea))
+        for i in range(N):
+            # g.add_one_attribute(i,v[i])
+            fea = random.choice(Fea)
+            g.add_one_attribute(i, fea)
+            for j in range(i+1, N):
+                if j != i:
+                    r = np.random.rand()
+                    if r < pw:
+                        g.add_edge((i, j))
+                        
+    elif fea_metric == 'jaccard':
+        for i in range(N):
+            # Generate a random length between 1 and 20
+            random_length = random.randint(1, 20)
+            # Generate a random string of that length
+            random_string = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(random_length))
+            fea = random_string
+            g.add_one_attribute(i, fea)
+            for j in range(i+1, N):
+                if j != i:
+                    r = np.random.rand()
+                    if r < pw:
+                        g.add_edge((i, j))
+    
 
     return g
 
 # %% merge community graphs
-
-
 def merge_graph(g1, g2):  # inputs are nx_graph
     gprime = nx.Graph(g1)
     N0 = len(gprime.nodes())
@@ -161,22 +177,33 @@ def merge_graph(g1, g2):  # inputs are nx_graph
     return gprime
 
 # %% build random graph G1
-
-
-def build_G1(G, N2=30, numfea=3, pw=0.5):
+def build_G1(G, N2=30, numfea=3, pw=0.5, fea_metric= 'dirac'):
     # v=mu+sigma*np.random.randn(N);
     # v=np.int_(np.floor(v)) # discrete attributes
     # Fea = np.linspace(0,20,numfea)
-    Fea = list(range(0, numfea))
-
+    
     L = len(G.nodes())
     # G.add_nodes(list(range(N2)))
 
     NN = N2+L  # total number of nodes in test graph
-    for i in range(L, NN):
-        # G.add_one_attribute(i,v[i-L])
-        fea = random.choice(Fea)
-        G.add_one_attribute(i, fea)
+    
+    if fea_metric == 'dirac' or fea_metric == 'sqeuclidean':
+        Fea = list(range(0, numfea))
+        for i in range(L, NN):
+            # G.add_one_attribute(i,v[i-L])
+            fea = random.choice(Fea)
+            G.add_one_attribute(i, fea)
+            
+    elif fea_metric == 'jaccard':
+        for i in range(L, NN):
+            # Generate a random length between 1 and 20
+            random_length = random.randint(1, 20)
+            # Generate a random string of that length
+            random_string = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(random_length))
+            fea = random_string
+            G.add_one_attribute(i, fea)
+
+
     for i in range(NN):
         for j in range(i+1, NN):
             if j != i and j not in range(L):  # no additional edge within the subgraph
@@ -188,7 +215,8 @@ def build_G1(G, N2=30, numfea=3, pw=0.5):
     return G
 
 #%% add noise to the query
-def add_noise_to_query(g,mean_fea,std_fea,str_mean,str_std,
+def add_noise_to_query(g,fea_metric,
+                       mean_fea,std_fea,str_mean,str_std,
                        Is_fea_noise,Is_str_noise):    
     if Is_fea_noise: # Add label noise
         if fea_metric == 'jaccard':
@@ -212,9 +240,9 @@ def add_noise_to_query(g,mean_fea,std_fea,str_mean,str_std,
                 # Convert the noisy code points back to a string
                 noisy_string = ''.join([chr(code) for code in noisy_code_points])
                 
-                g.nodes[node]['attr_name'] = round(noisy_string)
+                g.nodes[node]['attr_name'] = noisy_string
 
-        elif fea_metric == 'dirac':
+        elif fea_metric == 'dirac' or fea_metric == 'sqeuclidean':
             for node in g.nodes():
                 current_value = g.nodes[node]['attr_name']
                 noise = np.random.normal(mean_fea, std_fea)
@@ -249,6 +277,7 @@ for N3 in NN3:
     num = 0
     yes1 = 0
     yes2 = 0
+    yes3 = 0
     DFGW = np.zeros(Num)
     DIA = []
     while num < Num:
@@ -296,7 +325,7 @@ for N3 in NN3:
         # G11 = build_G1(G0, N=N, numfea = numfea, pw = pw1) # if set pw = 1 to build a fully-conn graph
         # if set pw = 1 to build a fully-conn graph
         # pw1=pw
-        G11 = build_comunity_graph(N=N, numfea=numfea, pw=pw1)
+        G11 = build_comunity_graph(N=N, numfea=numfea, pw=pw1, fea_metric=fea_metric)
 
         # %% build G1
         # np.random.seed()  # different graph G1 every time
@@ -306,7 +335,7 @@ for N3 in NN3:
         # G1 = Graph(merge_graph(G111.nx_graph,G112.nx_graph))
         N2 = N3 - N
         # pw2=pw
-        G1 = build_G1(G12, N2=N2, numfea=numfea, pw=pw2)
+        G1 = build_G1(G12, N2=N2, numfea=numfea, pw=pw2, fea_metric=fea_metric)
 
         # check if all nodes in G1 are connected
         # temp=G1.nx_graph._adj
@@ -323,7 +352,7 @@ for N3 in NN3:
         
         #%% add noise to query
         if Is_fea_noise or Is_str_noise:
-            g2_nodummy = add_noise_to_query(g2_nodummy, mean_fea = mean_fea, std_fea = std_fea, str_mean= str_mean, str_std= str_std,
+            g2_nodummy = add_noise_to_query(g2_nodummy, fea_metric=fea_metric, mean_fea = mean_fea, std_fea = std_fea, str_mean= str_mean, str_std= str_std,
                                    Is_fea_noise=Is_fea_noise, Is_str_noise=Is_str_noise)            
             
 #%%     only allow the query is connected
@@ -447,7 +476,12 @@ for N3 in NN3:
                 continue
             
             G2 = copy.deepcopy(G2_nodummy)
-            G2.add_attributes({len(G2.nodes()): 0})  # add dummy            
+            
+            if fea_metric == 'jaccard':
+                G2.add_attributes({len(G2.nodes()): "0"})  # add dummy            
+            else:
+                G2.add_attributes({len(G2.nodes()): 0})  # add dummy      
+            
     
             # %% plot the graphs
             if Is_fig == 1:
@@ -489,7 +523,7 @@ for N3 in NN3:
             # plt.show()
             
             #%% Wasserstein filtering
-            epsilon = 1e-9
+            epsilon = thre1
             alpha = 0
             dw, log_WD, transp_WD, M, C1, C2  = Fused_Gromov_Wasserstein_distance(
                 alpha=alpha, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy)
@@ -501,7 +535,7 @@ for N3 in NN3:
             dw_sub.append(dw)
             
             # FGWD
-            alpha = 0.2
+            alpha = 0
             dfgw, log_FGWD, transp_FGWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
                 alpha=alpha, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy)
             
@@ -564,13 +598,27 @@ for N3 in NN3:
         #%%
         dgfw_sub_min_norm=dgfw_sub_min/N # modified obj values 
         DFGW[num] = dgfw_sub_min_norm
-        if dgfw_sub_min_norm < thre1:
+        
+        def check_transp(transp):
+            for i in range(N - 1):
+                diagonal_element = transp[i, i]
+                row_max = np.max(transp[i, :])  # Maximum element in the current row up to the diagonal
+                if diagonal_element != row_max:
+                    return False
+        
+            return True  # All conditions are met
+        
+        if check_transp(transp_FGWD_sub_min):
+            yes3 +=1 
+            
+        if dgfw_sub_min_norm < thre1 or check_transp(transp_FGWD_sub_min):  # still cannot include all the possibilities, the actual rate would be higher
             yes1 += 1
         if dgfw_sub_min_norm < thre2:
             yes2 += 1
             
         DIA.append(g2_diameter) # for different diameter
         
+       
         
         num += 1
         # print(num)
@@ -651,6 +699,7 @@ for N3 in NN3:
         # %%
     print('Rate 1:',yes1/Num)
     print('Rate 2:',yes2/Num)
+    print('Rate of finding the original query', yes3/Num)
     print('STD:',np.std(DFGW))
 
     DFGW_set.append(DFGW)

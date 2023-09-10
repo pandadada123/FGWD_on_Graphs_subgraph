@@ -65,8 +65,8 @@ STD = []
 Lower = []
 Upper = []
 
-# g1 = pickle.load(open('\home\pan\dataset\data_pickle\imdb\G_imdb.pickle', 'rb'))
-# g2_nodummy = pickle.load(open('\home\pan\dataset\data_pickle\imdb\Q_imdb.pickle', 'rb'))
+# g1 = pickle.load(open('/home/pan/dataset/data_pickle/yago/G_yago.pickle', 'rb'))
+# g2_nodummy = pickle.load(open('/home/pan/dataset/data_pickle/yago/Q_yago.pickle', 'rb'))
 g1 = pickle.load(open('E:\Master Thesis\dataset\data_pickle\yago\G_yago.pickle', 'rb'))
 g2_nodummy = pickle.load(open('E:\Master Thesis\dataset\data_pickle\yago\Q_yago.pickle', 'rb'))
 
@@ -101,7 +101,7 @@ def add_noise_to_query(g,mean_fea,std_fea,str_mean,str_std,
                 
                 g.nodes[node]['attr_name'] = noisy_string
 
-        elif fea_metric == 'dirac':
+        elif fea_metric == 'dirac' or fea_metric == 'sqeuclidean':
             for node in g.nodes():
                 current_value = g.nodes[node]['attr_name']
                 noise = np.random.normal(mean_fea, std_fea)
