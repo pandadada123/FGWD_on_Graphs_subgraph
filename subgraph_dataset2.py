@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 import copy
 from lib1.ot_distances import Fused_Gromov_Wasserstein_distance
 # from ot_distances import Fused_Gromov_Wasserstein_distance,Wasserstein_distance
-# from data_loader import load_local_data,histog,build_noisy_circular_graph
+from lib1.data_loader import load_local_data,histog,build_noisy_circular_graph
 # from FGW import init_matrix,gwloss  # lib 0.0 no need
 # from FGW import cal_L,tensor_matrix,gwloss
 import scipy.stats as st
@@ -40,9 +40,9 @@ thre2 = 1e-4
         
 Is_fig = 0
 Is_info = 0
-Is_create_query = 0
-Is_fea_noise = 1
-Is_str_noise = 1
+Is_create_query = 1
+Is_fea_noise = 0
+Is_str_noise = 0
 
 mean_fea = 0
 std_fea = 0.1
@@ -52,8 +52,8 @@ str_std = 0.1
 Num = 1 # number of random graphs
 # fea_metric = 'dirac'
 # fea_metric = 'hamming'
-# fea_metric = 'sqeuclidean'
-fea_metric = 'jaccard'
+fea_metric = 'sqeuclidean'
+# fea_metric = 'jaccard'
 # str_metric = 'shortest_path'  # remember to change lib0 and cost matrix
 str_metric = 'adj'
 
@@ -65,14 +65,28 @@ STD = []
 Lower = []
 Upper = []
 
-# g1 = pickle.load(open('/home/pan/dataset/data_pickle/yago/G_yago.pickle', 'rb'))
-# g2_nodummy = pickle.load(open('/home/pan/dataset/data_pickle/yago/Q_yago.pickle', 'rb'))
-g1 = pickle.load(open('E:\Master Thesis\dataset\data_pickle\yago\G_yago.pickle', 'rb'))
-g2_nodummy = pickle.load(open('E:\Master Thesis\dataset\data_pickle\yago\Q_yago.pickle', 'rb'))
+# dataset_n='mutag' 
+# dataset_n='protein' 
+# dataset_n='protein_notfull' 
+# dataset_n='aids'
+# dataset_n='ptc'   # color is not a tuple
+# dataset_n='cox2'
+dataset_n='bzr'
+
+# path='/home/pan/dataset/data/'
+path='E:/Master Thesis/dataset/data/'
+# X is consisted of graph objects
+X,label=load_local_data(path,dataset_n,wl=0) # using the "wl" option that computes the Weisfeler-Lehman features for each nodes as shown is the notebook wl_labeling.ipynb
+# we do not use WL labeling 
+# x=X[2]
+
+NumG = len(X)
+NumQ = 1 
 
 plt.close("all")
-        
-NumQ = 1 # Number of query graphs
+
+NumG = len(X) # Number of graphs
+NumQ = 10 # Number of query graphs
 
 #%% add noise to the query
 def add_noise_to_query(g,mean_fea,std_fea,str_mean,str_std,
@@ -131,11 +145,12 @@ def add_noise_to_query(g,mean_fea,std_fea,str_mean,str_std,
 #%% create connected subgraphs/query graphs
 
 # Number of nodes in each subgraph
-num_nodes_per_subgraph = 7
+num_nodes_per_subgraph = 3
 
 # num = 0
 yes1 = 0
 yes2 = 0
+yes3 = 0
 DFGW = np.zeros(NumQ)
 DIA = []
 
@@ -143,29 +158,34 @@ for num in range(NumQ):
     print("num=",num)
     #%% create connected query graphs by BFS
     if Is_create_query:
-        if num_nodes_per_subgraph > len(g1.nodes()):
+        # Randomly select a graph
+        random_number = random.randint(0, NumG - 1) # randomly select a graph
+        # g3 = random.choice(X).nx_graph
+        g3 = X[random_number].nx_graph
+        while num_nodes_per_subgraph > len(g3.nodes()):
             print("The required query is too big")
-        else:
-            # Randomly select a starting node
-            start_node = random.choice(list(g1.nodes()))
-    
-            # Initialize a subgraph with the starting node
-            subgraph = nx.Graph()
-            subgraph.add_node(start_node, attr_name = g1.nodes[start_node].get("attr_name",None) )
-    
-            # Use a breadth-first search (BFS) to add connected nodes to the subgraph
-            queue = [start_node]
-            while len(subgraph) < num_nodes_per_subgraph and queue:
-                current_node = queue.pop(0)
-                neighbors = list(g1.neighbors(current_node))
-                random.shuffle(neighbors)  # Shuffle neighbors for randomness
-                for neighbor in neighbors:
-                    if neighbor not in subgraph and len(subgraph) < num_nodes_per_subgraph:
-                        subgraph.add_node(neighbor, attr_name = g1.nodes[neighbor].get("attr_name",None) )
-                        subgraph.add_edge(current_node, neighbor)
-                        queue.append(neighbor)
+            g3 = random.choice(X).nx_graph
 
-            g2_nodummy = subgraph
+        # Randomly select a starting node
+        start_node = random.choice(list(g3.nodes()))
+
+        # Initialize a subgraph with the starting node
+        subgraph = nx.Graph()
+        subgraph.add_node(start_node, attr_name = g3.nodes[start_node].get("attr_name",None) )
+
+        # Use a breadth-first search (BFS) to add connected nodes to the subgraph
+        queue = [start_node]
+        while len(subgraph) < num_nodes_per_subgraph and queue:
+            current_node = queue.pop(0)
+            neighbors = list(g3.neighbors(current_node))
+            random.shuffle(neighbors)  # Shuffle neighbors for randomness
+            for neighbor in neighbors:
+                if neighbor not in subgraph and len(subgraph) < num_nodes_per_subgraph:
+                    subgraph.add_node(neighbor, attr_name = g3.nodes[neighbor].get("attr_name",None) )
+                    subgraph.add_edge(current_node, neighbor)
+                    queue.append(neighbor)
+
+        g2_nodummy = subgraph
     
     #%% add noise to query
     if Is_fea_noise or Is_str_noise:
@@ -273,156 +293,197 @@ for num in range(NumQ):
     
         return h_hop_subgraph
     
-    #%% go over every node in target
-    g1_subgraph_list=[]
-    dfgw_sub = []
-    transp_FGWD_sub = []
-    G1_subgraph_sub = []
-    dw_sub = []
+    #%% go over every graph in the dataset
+    dfgw_x = []
+    transp_x = []
+    dw_x = []
+    G1_subgraph_x = []
     
-    ii=0
-    for center_node in g1.nodes():
-        print(ii)
-        ii+=1
+    jj=0
+    for G1 in X:
+        print(jj)
+        jj+=1
+        g1=G1.nx_graph
+        
+        #%% go over every node in target
+        g1_subgraph_list=[]
+        dfgw_sub = []
+        transp_FGWD_sub = []
+        G1_subgraph_sub = []
+        dw_sub = []
+        
+        ii=0
+        for center_node in g1.nodes():
+            print(ii)
+            ii+=1
+        
+            # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter/2))  # sometimes could not include the subgraph in the big graph
+            # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter))
+            g1_subgraph = create_h_hop_subgraph(g1, center_node, h = g2_longest_path_center)
+            g1_subgraph_list.append(g1_subgraph)                   
     
-        # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter/2))  # sometimes could not include the subgraph in the big graph
-        # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter))
-        g1_subgraph = create_h_hop_subgraph(g1, center_node, h = g2_longest_path_center)
-        g1_subgraph_list.append(g1_subgraph)                   
-
-        G1_subgraph = Graph(g1_subgraph)
-        
-        if len(G1_subgraph.nodes()) < len(G2_nodummy.nodes()):  
-            print("The sliding subgraph did not get enough nodes.")
-            continue
-        
-        G2 = copy.deepcopy(G2_nodummy)
-        
-        if fea_metric == 'jaccard':
-            G2.add_attributes({len(G2.nodes()): "0"})  # add dummy            
-        elif fea_metric == 'dirac':
-            G2.add_attributes({len(G2.nodes()): 0})  # add dummy      
-        
-
-        # %% plot the graphs
-        if Is_fig == 1:
-            vmin = 0
-            vmax = 9  # the range of color
+            G1_subgraph = Graph(g1_subgraph)
+            
+            if len(G1_subgraph.nodes()) < len(G2_nodummy.nodes()):  
+                print("The sliding subgraph did not get enough nodes.")
+                continue
+            
+            G2 = copy.deepcopy(G2_nodummy)
+            
+            Large = 1e6
+            if fea_metric == 'jaccard':
+                G2.add_attributes({Large: "0"})  # add dummy  
+            elif fea_metric == 'sqeuclidean':
+                G2.add_attributes({Large: np.array([0])  })  # add dummy 
+            elif fea_metric == 'dirac':
+                G2.add_attributes({Large: 0})  # add dummy      
+            
     
-            plt.figure(figsize=(8, 5))
-            # create some bugs in the nx.draw_networkx, don't know why.
-            draw_rel(g1_subgraph, vmin=vmin, vmax=vmax, with_labels=True, draw=False)
-            draw_rel(g2_nodummy, vmin=vmin, vmax=vmax,
-                      with_labels=True, shiftx=3, draw=False)
-            plt.title('Sliding subgraph and query graph: Color indicates the label')
-            plt.show()
-
-        # %% weights and feature metric
-        p1 = ot.unif(len(G1_subgraph.nodes()))
-        # ACTUALLY NOT USED IN THE ALGORITHM
-        p2_nodummy = 1/len(G1_subgraph.nodes()) * np.ones([len(G2_nodummy.nodes())])
-        p2 = np.append(p2_nodummy, 1-sum(p2_nodummy))
-
+            # %% plot the graphs
+            if Is_fig == 1:
+                vmin = 0
+                vmax = 9  # the range of color
         
-
-        # %% use the function from FGWD all the time
-        thresh = 0.004
-        # WD
-        # dw, log_WD, transp_WD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
-        #     alpha=0, features_metric=fea_metric, method='shortest_path', loss_fun='square_loss').graph_d(G1, G2, p1, p2, p2_nodummy)
-        # fig=plt.figure(figsize=(10,8))
-        # plt.title('WD coupling')
-        # draw_transp(G1,G2,transp_WD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
-        # plt.show()
-
-        # GWD
-        # dgw, log_GWD, transp_GWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
-        #     alpha=1, features_metric=fea_metric, method='shortest_path', loss_fun='square_loss').graph_d(G1, G2, p1, p2, p2_nodummy)
-        # fig=plt.figure(figsize=(10,8))
-        # plt.title('GWD coupling')
-        # draw_transp(G1,G2,transp_GWD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
-        # plt.show()
-        #%% Wasserstein filtering
-        epsilon = 1e-9
-        alpha = 0
-        dw, log_WD, transp_WD, M, C1, C2  = Fused_Gromov_Wasserstein_distance(
-            alpha=alpha, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy)
-        
-        if dw > epsilon:
-            print("filter out")
-            continue
-        
-        dw_sub.append(dw)
-        
-        #%% FGWD
-        alpha = 0.1
-        dfgw, log_FGWD, transp_FGWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
-            alpha=alpha, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy)
-        
-        #%% results from all sliding subgraphs
-        dfgw_sub.append(dfgw)
-        transp_FGWD_sub.append(transp_FGWD)
-        G1_subgraph_sub.append(G1_subgraph)
-        
+                plt.figure(figsize=(8, 5))
+                # create some bugs in the nx.draw_networkx, don't know why.
+                draw_rel(g1_subgraph, vmin=vmin, vmax=vmax, with_labels=True, draw=False)
+                draw_rel(g2_nodummy, vmin=vmin, vmax=vmax,
+                          with_labels=True, shiftx=3, draw=False)
+                plt.title('Sliding subgraph and query graph: Color indicates the label')
+                plt.show()
     
+            # %% weights and feature metric
+            p1 = ot.unif(len(G1_subgraph.nodes()))
+            # ACTUALLY NOT USED IN THE ALGORITHM
+            p2_nodummy = 1/len(G1_subgraph.nodes()) * np.ones([len(G2_nodummy.nodes())])
+            p2 = np.append(p2_nodummy, 1-sum(p2_nodummy))
+    
+            
+    
+            # %% use the function from FGWD all the time
+            thresh = 0.004
+            # WD
+            # dw, log_WD, transp_WD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
+            #     alpha=0, features_metric=fea_metric, method='shortest_path', loss_fun='square_loss').graph_d(G1, G2, p1, p2, p2_nodummy)
+            # fig=plt.figure(figsize=(10,8))
+            # plt.title('WD coupling')
+            # draw_transp(G1,G2,transp_WD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
+            # plt.show()
+    
+            # GWD
+            # dgw, log_GWD, transp_GWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
+            #     alpha=1, features_metric=fea_metric, method='shortest_path', loss_fun='square_loss').graph_d(G1, G2, p1, p2, p2_nodummy)
+            # fig=plt.figure(figsize=(10,8))
+            # plt.title('GWD coupling')
+            # draw_transp(G1,G2,transp_GWD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
+            # plt.show()
+            #%% Wasserstein filtering
+            epsilon = 1e-9
+            alpha = 0
+            dw, log_WD, transp_WD, M, C1, C2  = Fused_Gromov_Wasserstein_distance(
+                alpha=alpha, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy)
+            
+            if dw > epsilon:
+                print("filter out")
+                continue
+            
+            dw_sub.append(dw)
+            
+            #%% FGWD
+            alpha = 0.5
+            dfgw, log_FGWD, transp_FGWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
+                alpha=alpha, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy)
+            
+            #%% results from all sliding subgraphs
+            dfgw_sub.append(dfgw)
+            transp_FGWD_sub.append(transp_FGWD)
+            G1_subgraph_sub.append(G1_subgraph)
+            
         
-        # %% FGWD, find alpha
-        # alld=[]
-        # x=np.linspace(0,1,10)
-        # for alpha in x:
-        #     d,log,transp=Fused_Gromov_Wasserstein_distance(alpha=alpha,features_metric=fea_metric).graph_d(G1,G2,p1,p2,p2_nodummy)
-        #     alld.append(d)
-        # fig=plt.figure(figsize=(10,8))
-        # plt.plot(x,alld)
-        # plt.title('Evolution of FGW dist in wrt alpha \n max={}'.format(x[np.argmax(alld)]))
-        # plt.xlabel('Alpha')
-        # plt.xlabel('FGW dist')
-        # plt.show()
-
-        # # optimal matching
-        # fig=plt.figure(figsize=(10,8))
-        # thresh=0.004
-        # alpha_opt=x [ alld.index(max(alld)) ]
-        # dfgw_opt,log_FGWD_opt,transp_FGWD_opt=Fused_Gromov_Wasserstein_distance(alpha=alpha_opt,features_metric=fea_metric).graph_d(G1,G2,p1,p2,p2_nodummy)
-        # # d=dfgw.graph_d(g1,g2)
-        # # plt.title('FGW coupling, dist : '+str(np.round(dfgw,3)),fontsize=15)
-        # plt.title('FGW coupling, alpha = opt')
-        # draw_transp(G1,G2,transp_FGWD_opt,shiftx=2,shifty=0.5,thresh=thresh,
-        #             swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
-        # plt.show()
-
-        # print('Wasserstein distance={}, Gromov distance={} \nFused Gromov-Wasserstein distance for alpha {} = {}'.format(dw,dgw,alpha,dfgw))
-
-    #%% get the min dfgw from the sliding subgraphs
-    dgfw_sub_min = min(dfgw_sub)
-    min_index = dfgw_sub.index(dgfw_sub_min)
+            
+            # %% FGWD, find alpha
+            # alld=[]
+            # x=np.linspace(0,1,10)
+            # for alpha in x:
+            #     d,log,transp=Fused_Gromov_Wasserstein_distance(alpha=alpha,features_metric=fea_metric).graph_d(G1,G2,p1,p2,p2_nodummy)
+            #     alld.append(d)
+            # fig=plt.figure(figsize=(10,8))
+            # plt.plot(x,alld)
+            # plt.title('Evolution of FGW dist in wrt alpha \n max={}'.format(x[np.argmax(alld)]))
+            # plt.xlabel('Alpha')
+            # plt.xlabel('FGW dist')
+            # plt.show()
     
-    transp_FGWD_sub_min = transp_FGWD_sub[min_index]
-    G1_subgraph_min = G1_subgraph_sub[min_index]
+            # # optimal matching
+            # fig=plt.figure(figsize=(10,8))
+            # thresh=0.004
+            # alpha_opt=x [ alld.index(max(alld)) ]
+            # dfgw_opt,log_FGWD_opt,transp_FGWD_opt=Fused_Gromov_Wasserstein_distance(alpha=alpha_opt,features_metric=fea_metric).graph_d(G1,G2,p1,p2,p2_nodummy)
+            # # d=dfgw.graph_d(g1,g2)
+            # # plt.title('FGW coupling, dist : '+str(np.round(dfgw,3)),fontsize=15)
+            # plt.title('FGW coupling, alpha = opt')
+            # draw_transp(G1,G2,transp_FGWD_opt,shiftx=2,shifty=0.5,thresh=thresh,
+            #             swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
+            # plt.show()
     
-    dw_sub_min = dw_sub[min_index]
+            # print('Wasserstein distance={}, Gromov distance={} \nFused Gromov-Wasserstein distance for alpha {} = {}'.format(dw,dgw,alpha,dfgw))
     
-    print("FGWD", dgfw_sub_min)
-    print("transp", transp_FGWD_sub_min)
-    print("WD", dw_sub_min)
-
-    # if Is_fig == 1:
-    vmin = 0
-    vmax = 9  # the range of color
-    fig = plt.figure(figsize=(10, 8))
-    plt.title('Optimal FGWD coupling')
-    draw_transp(G1_subgraph_min, G2, transp_FGWD_sub_min, shiftx=2, shifty=0.5, thresh=thresh,
-                swipy=True, swipx=False, with_labels=True, vmin=vmin, vmax=vmax)
-    plt.show()
+        #%% get the min dfgw from the sliding subgraphs
+        try:
+            dgfw_sub_min = min(dfgw_sub)
+            min_index = dfgw_sub.index(dgfw_sub_min)
+            
+            transp_FGWD_sub_min = transp_FGWD_sub[min_index]
+            G1_subgraph_min = G1_subgraph_sub[min_index]
+            
+            dw_sub_min = dw_sub[min_index]
+        except:
+            print("No subgraph in this graph")
+            dgfw_sub_min = np.nan
+            transp_FGWD_sub_min = np.nan
+            G1_subgraph_min = np.nan
+            dw_sub_min = np.nan
+        
+        #%% results from all graphs
+        dfgw_x.append(dgfw_sub_min)
+        transp_x.append(transp_FGWD_sub_min)
+        dw_x.append(dw_sub_min)
+        G1_subgraph_x.append(G1_subgraph_min)
+        
+    #%% get the min dfgw from all graphs in X
+    dfgw_x_min = min([x for x in dfgw_x if not math.isnan(x)])
+    min_index_x = dfgw_x.index(dfgw_x_min)
+    transp_x_min = transp_x[min_index_x]
+    G1_subgraph_x_min = G1_subgraph_x[min_index_x]
+    dw_x_min = dw_x[min_index_x]
+    
+    print("FGWD", dfgw_x_min)
+    print("transp", transp_x_min)
+    print("WD", dw_x_min)
+    
+    print("original graph index", random_number)
+    print("found graph index", min_index_x)
+    
+    if Is_fig == 1:
+        vmin = 0
+        vmax = 9  # the range of color
+        fig = plt.figure(figsize=(10, 8))
+        plt.title('Optimal FGWD coupling')
+        draw_transp(G1_subgraph_x_min, G2, transp_FGWD_sub_min, shiftx=2, shifty=0.5, thresh=thresh,
+                    swipy=True, swipx=False, with_labels=True, vmin=vmin, vmax=vmax)
+        plt.show()
     
 
     #%% get the final result for one query graph
-    dgfw_sub_min_norm=dgfw_sub_min/N # modified obj values 
-    DFGW[num] = dgfw_sub_min_norm
-    if dgfw_sub_min_norm < thre1:
+    dgfw_x_min_norm=dfgw_x_min/N # modified obj values 
+    DFGW[num] = dgfw_x_min_norm
+    if dgfw_x_min_norm < thre1:
         yes1 += 1
-    if dgfw_sub_min_norm < thre2:
+    if dgfw_x_min_norm < thre2:
         yes2 += 1
+        
+    if random_number == min_index_x:
+        yes3+=1
         
     DIA.append(g2_diameter) # for different diameter
         
@@ -500,9 +561,10 @@ if Is_info:
         print(adjacency_query)
 
 # %% rates of all query graphs
-print('Rate 1:',yes1/NumQ)
-print('Rate 2:',yes2/NumQ)
+print('find the exact matching:',yes1/NumQ)
+print('find the approx matching:',yes2/NumQ)
 print('STD:',np.std(DFGW))
+print('find the correct graph', yes3/NumQ)
 
 DFGW_set.append(DFGW)
 Percent1.append(yes1/Num)

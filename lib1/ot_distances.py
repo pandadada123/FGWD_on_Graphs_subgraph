@@ -312,7 +312,7 @@ class Fused_Gromov_Wasserstein_distance():
                         if f1.shape != f2.shape:
                             M[i,j] = LargeValue
                         else: 
-                            M[i][j]=sum([pow(f1-f2 ,2)])
+                            M[i][j]=np.sum([pow(f1-f2 ,2)])
                         
             elif self.features_metric=='jaccard':
                 for i in range(n1):

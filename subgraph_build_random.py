@@ -47,9 +47,9 @@ N = 5  # nodes in subgraph
 NN3 = [45]
 # Pw = np.linspace(0.1, 1, 10)
 # Pw = [0.1]
-pw1 = 0.5  # query
+pw1 = 0.1  # query
 # pw1 = np.random.choice(np.linspace(0.1, 1, 10))
-pw2 = 0.5  # target
+pw2 = 0.1  # target
 # Sigma2=[0.01,0.1,0.5,1,2,3,4]
 # Sigma2=[0.01]
 # sigma1=0.1
@@ -578,7 +578,7 @@ for N3 in NN3:
         transp_FGWD_sub_min = transp_FGWD_sub[min_index]
         G1_subgraph_min = G1_subgraph_sub[min_index]
         
-        dw_sub_min = min(dw_sub)
+        dw_sub_min = dw_sub[min_index]
         
         print("FGWD", dgfw_sub_min)
         # print("transp", transp_FGWD_sub_min)
