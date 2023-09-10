@@ -5,8 +5,8 @@ import numpy.matlib
 
 # import torch
 import ot
-import optim
-from utils import dist,reshaper
+import lib0.optim as optim
+from lib0.utils import dist,reshaper
 # from bregman import sinkhorn_scaling
 from scipy import stats
 from scipy.sparse import random

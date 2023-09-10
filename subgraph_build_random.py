@@ -54,7 +54,7 @@ pw2 = 0.5  # target
 # Sigma2=[0.01]
 # sigma1=0.1
 # sigma2=0.1
-numfea = 15
+numfea = 4
 # NumFea = list(range(1, 11))  # from 1 to 20
 # NumFea = [2]
 
@@ -72,10 +72,10 @@ Is_fea_noise = 0
 Is_str_noise = 0
 
 Num = 100 # number of random graphs
-# fea_metric = 'dirac'
+fea_metric = 'dirac'
 # fea_metric = 'hamming'
 # fea_metric = 'sqeuclidean'
-fea_metric = 'jaccard'
+# fea_metric = 'jaccard'
 # str_metric = 'shortest_path'  # remember to change lib0 and cost matrix
 str_metric = 'adj'
 
@@ -535,7 +535,7 @@ for N3 in NN3:
             dw_sub.append(dw)
             
             # FGWD
-            alpha = 0
+            alpha = 0.5
             dfgw, log_FGWD, transp_FGWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
                 alpha=alpha, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy)
             

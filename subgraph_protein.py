@@ -8,12 +8,12 @@ import numpy as np
 import os,sys
 
 # sys.path.append(os.path.realpath('../lib'))
-sys.path.append(os.path.realpath('E:/Master Thesis/FGWD_on_Graphs_subgraph/lib_1.0'))
+# sys.path.append(os.path.realpath('E:/Master Thesis/FGWD_on_Graphs_subgraph/lib_1.0'))
 
-from graph import graph_colors,draw_rel,draw_transp,Graph,wl_labeling
-from ot_distances import Fused_Gromov_Wasserstein_distance
+from lib1.graph import graph_colors,draw_rel,draw_transp,Graph,wl_labeling
+from lib1.ot_distances import Fused_Gromov_Wasserstein_distance
 import copy
-from data_loader import load_local_data,histog,build_noisy_circular_graph
+from lib1.data_loader import load_local_data,histog,build_noisy_circular_graph
 import matplotlib.pyplot as plt
 import networkx as nx
 import ot

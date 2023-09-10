@@ -1,9 +1,9 @@
 import ot
-import FGW as fgw
+import lib0.FGW as fgw
 import numpy as np
 import time
-from graph import NoAttrMatrix
-from utils import hamming_dist
+from lib0.graph import NoAttrMatrix
+from lib0.utils import hamming_dist
 import networkx as nx
 """
 The following classes adapt the OT distances to Graph objects
@@ -143,10 +143,10 @@ class Fused_Gromov_Wasserstein_distance():
         n1=len(nodes1)
         n2=len(nodes2)
         
-        # Keys1 = sorted(list(nodes1.keys()))  # order of nodes for cost matrices
-        # Keys2 = sorted(list(nodes2.keys()))
-        Keys1 = list(nodes1.keys()) # order of nodes for cost matrices (DO NOT NEED TO BE SORTED)
-        Keys2 = list(nodes2.keys())
+        Keys1 = sorted(list(nodes1.keys()))  # order of nodes for cost matrices
+        Keys2 = sorted(list(nodes2.keys()))
+        # Keys1 = list(nodes1.keys()) # order of nodes for cost matrices (DO NOT NEED TO BE SORTED)
+        # Keys2 = list(nodes2.keys())
         
         #%% Calculate the shortest path distance matrix 
         # LargeValue = sys.float_info.max
@@ -237,6 +237,33 @@ class Fused_Gromov_Wasserstein_distance():
         #     x2=None
         #     gofeature=False
         
+        # def node_scoring_function(first: str, second: str):  # this implementation is not reasonable
+        #     """ node scoring function takes two strings and returns a 
+        #         score in the range 0 <= score <= 1
+        #     """
+        #     # first_, second_ = sorted((first.lower(), second.lower()), key=len) # put the shorter string in the first place
+        #     first_, second_ = sorted((first, second), key=len) # put the shorter string in the first place
+
+        #     # if first is not a substring of second: score = 0
+        #     if not first_ in second_:  # they have no intersection
+        #         # return 0
+        #         score = 0
+        #     # otherwise use the relative difference between
+        #     # the two lengths
+        #     score = len(second_) - len(first_)
+        #     score /= max(len(first_), len(second_))
+        #     score = 1. - score # jaccard similarity, 1 means they are the same
+            
+        #     score = 1. - score # jaccard dissimilarity, 0 means they are the same
+            
+        #     return score
+        
+        def node_scoring_function(str1, str2):
+            set1 = set(str1)
+            set2 = set(str2)
+            intersection = len(set1.intersection(set2))
+            union = len(set1.union(set2))
+            return 1.0 - intersection / union
         
         if gofeature : 
             M=np.zeros((C1.shape[0],C2.shape[0])) # initialization
@@ -284,7 +311,15 @@ class Fused_Gromov_Wasserstein_distance():
                         else: 
                             M[i][j]=sum(pow(f1-f2 ,2))
                         
-                
+            elif self.features_metric=='jaccard':
+                for i in range(n1):
+                    for j in range(n2):
+                        key1 = Keys1[i]
+                        key2 = Keys2[j] 
+                        f1 = nodes1[key1]['attr_name'] 
+                        f2 = nodes2[key2]['attr_name']
+                        M[i][j]=node_scoring_function(f1, f2)
+                        
             # else:
                 # M=ot.dist(x1,x2,metric=self.features_metric)
                 
