@@ -429,7 +429,8 @@ for num in range(NumQ):
     
 # %% check the features and structure
 if Is_info:
-        index = np.argwhere(transp_FGWD[:, 0:-1] > 1e-3)
+        # index = np.argwhere(transp_FGWD[:, 0:-1] > 1e-3)
+        index = np.argwhere(transp_FGWD_sub_min[:, 0:-1] > 1e-3)
         # Get the indices that would sort the second column in ascending order
         sort_indices = np.argsort(index[:, 1])
         index = index[sort_indices]

@@ -30,7 +30,7 @@ import scipy.stats as st
 import math
 import string
 
-N = 5  # nodes in subgraph
+N = 5  # nodes in query
 # NN =  [5,10,15,25,35,45,55]
 # NN =[10]
 # NN = [10]
@@ -47,9 +47,9 @@ N = 5  # nodes in subgraph
 NN3 = [45]
 # Pw = np.linspace(0.1, 1, 10)
 # Pw = [0.1]
-pw1 = 0.1  # query
+pw1 = 0.5  # query
 # pw1 = np.random.choice(np.linspace(0.1, 1, 10))
-pw2 = 0.1  # target
+pw2 = 0.5  # target
 # Sigma2=[0.01,0.1,0.5,1,2,3,4]
 # Sigma2=[0.01]
 # sigma1=0.1
@@ -60,7 +60,7 @@ numfea = 4
 
 # Alpha = np.linspace(0, 1, 11)
 
-Dia = [i for i in range(1, N)]
+# Dia = [i for i in range(1, N)]
 
 thre1 = 1e-9
 # thre2=-0.015000 # entropic
@@ -71,7 +71,7 @@ Is_info = 0
 Is_fea_noise = 0
 Is_str_noise = 0
 
-Num = 100 # number of random graphs
+Num = 100 # number of repeats (generate a random graph and a query)
 fea_metric = 'dirac'
 # fea_metric = 'hamming'
 # fea_metric = 'sqeuclidean'
@@ -79,22 +79,15 @@ fea_metric = 'dirac'
 # str_metric = 'shortest_path'  # remember to change lib0 and cost matrix
 str_metric = 'adj'
 
+alpha1 = 0
+alpha2 = 0.5
+
 mean_fea = 0
 std_fea = 0
 str_mean = 0
 str_std = 0
 
-DFGW_set = []
-Percent1 = []
-Percent2 = []
-Mean = []
-STD = []
-Lower = []
-Upper = []
-
 # %% build star graph
-
-
 def build_star_graph():
     g = Graph()
     g.add_attributes({0: 0, 1: 3, 2: 5, 3: 7})    # add color to nodes
@@ -105,8 +98,6 @@ def build_star_graph():
     return g
 
 # %% build fully connected graph
-
-
 def build_fully_graph(N=30, numfea=3):
     # v=mu+sigma*np.random.randn(N);
     # v=np.int_(np.floor(v)) # discrete attributes
@@ -127,8 +118,6 @@ def build_fully_graph(N=30, numfea=3):
 
 # %% build comunity graphs with different assortivity
 # pw is the possibility that one edge is connected
-
-
 def build_comunity_graph(N=30, numfea=3, pw=0.5, fea_metric= 'dirac'):
     g = Graph()
     g.add_nodes(list(range(N)))
@@ -271,63 +260,40 @@ def add_noise_to_query(g,fea_metric,
 
     
 # %%
+DFGW_set = []
+Percent1 = []
+Percent2 = []
+Percent3 = []
+Mean = []
+STD = []
+Lower = []
+Upper = []
 
 for N3 in NN3:
-    
     num = 0
-    yes1 = 0
-    yes2 = 0
-    yes3 = 0
+
+    #%% save data for all iterations
     DFGW = np.zeros(Num)
-    DIA = []
+    transp_FGWD_sliding_min_x = []
+    g1_sliding_min_x = []
+    G1_sliding_min_x = []
+    dw_sliding_x = []
+    
+    # g1_subgraph_found_x = []
+    g2_nodummy_x = []
+    # DIA = []
+    # yes=0
+    index3 = []
+    
     while num < Num:
 
         plt.close("all")
         
-        print(num)
-
-        # %%
-        # N=5
-        # mu1=-1.5
-        # mu2=1.5
-        # mu3=3
-        # pw1=0.8
-        # pw2=0.3
-        # pw3=0.8
-        # vmin=-3
-        # vmax=7
-        # np.random.seed(12)
-        # G11=build_comunity_graph(N=N,mu=mu1,sigma=0.8,pw=pw1)
-        # G12=build_comunity_graph(N=N,mu=mu2,sigma=0.8,pw=pw2)
-        # G13=build_comunity_graph(N=N,mu=mu3,sigma=0.8,pw=pw3)
-        # com_graph={1:G11,2:G12,3:G13}
-
-        # %% merge
-        # n=0
-        # Num=[]
-        # while n<=3:
-        #     num=np.random.randint(1,4) # randomly generate a number within [1,2,3]
-        #     Num=np.append(Num,num)
-        #     g1=merge_graph(g1, com_graph[num].nx_graph)
-        #     n+=1
-
-        # G1=Graph(g1)
-
-        # %% build a fully connected graph (also the subgraph)
-        # G11=build_fully_graph(N=N,mu=mu1,sigma=0.01)
-        # G11 = build_star_graph()
-        # G11=build_comunity_graph(N=N,mu=mu1,sigma=2, pw=0.5)
-
-        # %% build a random subgraoh
-        # G0 = Graph() # an empty graph
-        # different graph with different seed -> same subgraph everytime
-        # np.random.seed(12)
-        # G11 = build_G1(G0, N=N, numfea = numfea, pw = pw1) # if set pw = 1 to build a fully-conn graph
-        # if set pw = 1 to build a fully-conn graph
-        # pw1=pw
+        print("iter", num)
+        
+        # %% build G1
         G11 = build_comunity_graph(N=N, numfea=numfea, pw=pw1, fea_metric=fea_metric)
 
-        # %% build G1
         # np.random.seed()  # different graph G1 every time
         G12 = copy.deepcopy(G11)  # initialize with subgraph
         # G111=build_G1(G12,N=N2,mu=1,sigma=8,pw=0.1)
@@ -336,12 +302,6 @@ for N3 in NN3:
         N2 = N3 - N
         # pw2=pw
         G1 = build_G1(G12, N2=N2, numfea=numfea, pw=pw2, fea_metric=fea_metric)
-
-        # check if all nodes in G1 are connected
-        # temp=G1.nx_graph._adj
-        # if any(value=={} for value in temp.values()) == True:
-        #     print("oops")
-        #     continue
 
         # %% G1 is the test graph and G2_nodummy is the query graph
         G2_nodummy = copy.deepcopy(G11)
@@ -354,8 +314,10 @@ for N3 in NN3:
         if Is_fea_noise or Is_str_noise:
             g2_nodummy = add_noise_to_query(g2_nodummy, fea_metric=fea_metric, mean_fea = mean_fea, std_fea = std_fea, str_mean= str_mean, str_std= str_std,
                                    Is_fea_noise=Is_fea_noise, Is_str_noise=Is_str_noise)            
-            
-#%%     only allow the query is connected
+        
+        G2_nodummy = Graph(g2_nodummy)
+        
+        #%% only allow the query is connected
         is_connected = nx.is_connected(g2_nodummy)
         if is_connected == 0:
             print("'The query graph is not connected.'")
@@ -410,70 +372,85 @@ for N3 in NN3:
         
         
         # g2_diameter = nx.diameter(g2_nodummy)
-        # g1_subgraph_list = find_subgraph_with_diameter(g1, diameter=g2_diameter)
+        # g1_sliding_list = find_subgraph_with_diameter(g1, diameter=g2_diameter)
 
 
-        #%% sliding window 
+        #%% Sliding window: deal with G2_nodummy
         # diameter of query 
-        g2_diameter = nx.diameter(g2_nodummy)
-        
+        # g2_diameter = nx.diameter(g2_nodummy)
+        # DIA.append(g2_diameter) # for different diameter
+
         # define a center, return the longest possible length of path from the center node
-        def find_center_with_smallest_avg_hops(graph):
-            min_avg_hops = float('inf')
+        # def find_center_with_smallest_avg_hops(graph):
+        #     min_avg_hops = float('inf')
+        #     center_node_query = None
+            
+        #     for node in graph.nodes():
+        #         avg_hops = sum(nx.shortest_path_length(graph, source=node).values()) / (len(graph.nodes()) - 1)
+                
+        #         if avg_hops < min_avg_hops:
+        #             min_avg_hops = avg_hops
+        #             center_node_query = node
+                    
+        #     longest_path_center = max(nx.shortest_path_length(graph, source=center_node_query).values())
+            
+        #     return longest_path_center
+        
+        # g2_longest_path_from_center = find_center_with_smallest_avg_hops(g2_nodummy)
+        
+        def find_center_with_smallest_longest_hops(graph):
+            min_longest_hops = float('inf') 
             center_node_query = None
             
             for node in graph.nodes():
-                avg_hops = sum(nx.shortest_path_length(graph, source=node).values()) / (len(graph.nodes()) - 1)
+                longest_hops = max(nx.shortest_path_length(graph, source=node).values())
                 
-                if avg_hops < min_avg_hops:
-                    min_avg_hops = avg_hops
+                if longest_hops < min_longest_hops:
+                    min_longest_hops = longest_hops
                     center_node_query = node
                     
-            longest_path_center = max(nx.shortest_path_length(graph, source=center_node_query).values())
+            longest_path_center = min_longest_hops
             
             return longest_path_center
         
-        g2_longest_path_center = find_center_with_smallest_avg_hops(g2_nodummy)
+        g2_longest_path_from_center = find_center_with_smallest_longest_hops(g2_nodummy)
         
-        # Using h-diameter neighborhood hops 
-        def create_h_hop_subgraph(graph, center_node, h):
-            subgraph_nodes = set([center_node])
-            neighbors = set([center_node])
-        
-            for _ in range(h):
-                new_neighbors = set()
-                for node in neighbors:
-                    new_neighbors.update(graph.neighbors(node))
-                subgraph_nodes.update(new_neighbors)
-                neighbors = new_neighbors
-                
-            h_hop_subgraph = graph.subgraph(subgraph_nodes).copy()
-        
-            return h_hop_subgraph
-        
-        #%% go over every node in target
-        g1_subgraph_list=[]
-        dfgw_sub = []
-        transp_FGWD_sub = []
-        G1_subgraph_sub = []
-        dw_sub = []
-
+        #%% Sliding window: go over every node in target
+        g1_sliding_list=[]        
+        G1_sliding_list = []
+        dw_sliding_list = []
+        dfgw_sliding_list  = []
+        transp_FGWD_sliding_list = []
         
         ii=0
         for center_node in g1.nodes():
             print(ii)
             ii+=1
-        
+            
+            # Using h-diameter neighborhood hops to create sliding subgraph
+            def create_h_hop_subgraph(graph, center_node, h):
+                subgraph_nodes = set([center_node])
+                neighbors = set([center_node])
+            
+                for _ in range(h):
+                    new_neighbors = set()
+                    for node in neighbors:
+                        new_neighbors.update(graph.neighbors(node))
+                    subgraph_nodes.update(new_neighbors)
+                    neighbors = new_neighbors
+                    
+                h_hop_subgraph = graph.subgraph(subgraph_nodes).copy()
+            
+                return h_hop_subgraph
+            
             # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter/2))  # sometimes could not include the subgraph in the big graph
             # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter))
-            g1_subgraph = create_h_hop_subgraph(g1, center_node, h = g2_longest_path_center)
-            g1_subgraph_list.append(g1_subgraph)                   
-
-            G1_subgraph = Graph(g1_subgraph)
+            g1_sliding = create_h_hop_subgraph(g1, center_node, h = g2_longest_path_from_center)
+            G1_sliding = Graph(g1_sliding)
             
-            if len(G1_subgraph.nodes()) < len(G2_nodummy.nodes()):  
+            if len(G1_sliding.nodes()) < len(G2_nodummy.nodes()):  
                 print("The sliding subgraph did not get enough nodes.")
-                continue
+                continue # go to the next sliding subgraph
             
             G2 = copy.deepcopy(G2_nodummy)
             
@@ -490,18 +467,22 @@ for N3 in NN3:
         
                 plt.figure(figsize=(8, 5))
                 # create some bugs in the nx.draw_networkx, don't know why.
-                draw_rel(g1_subgraph, vmin=vmin, vmax=vmax, with_labels=True, draw=False)
+                draw_rel(g1_sliding, vmin=vmin, vmax=vmax, with_labels=True, draw=False)
                 draw_rel(g2_nodummy, vmin=vmin, vmax=vmax,
                           with_labels=True, shiftx=3, draw=False)
                 plt.title('Sliding subgraph and query graph: Color indicates the label')
                 plt.show()
     
             # %% weights and feature metric
-            p1 = ot.unif(len(G1_subgraph.nodes()))
+            p1 = ot.unif(len(G1_sliding.nodes()))
             # ACTUALLY NOT USED IN THE ALGORITHM
-            p2_nodummy = 1/len(G1_subgraph.nodes()) * np.ones([len(G2_nodummy.nodes())])
+            p2_nodummy = 1/len(G1_sliding.nodes()) * np.ones([len(G2_nodummy.nodes())])
             p2 = np.append(p2_nodummy, 1-sum(p2_nodummy))
-    
+            
+            # p1 = np.ones(len(G1_sliding.nodes()))
+            # # ACTUALLY NOT USED IN THE ALGORITHM
+            # p2_nodummy = np.ones([len(G2_nodummy.nodes())])
+            # p2 = np.append(p2_nodummy, sum(p1)-sum(p2_nodummy))
             
     
             # %% use the function from FGWD all the time
@@ -524,27 +505,30 @@ for N3 in NN3:
             
             #%% Wasserstein filtering
             epsilon = thre1
-            alpha = 0
+            # alpha = 0
             dw, log_WD, transp_WD, M, C1, C2  = Fused_Gromov_Wasserstein_distance(
-                alpha=alpha, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy)
+                alpha=alpha1, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_sliding, G2, p1, p2, p2_nodummy)
             
             if dw > epsilon:
                 print("filter out")
-                continue
+                continue # go to the next sliding subgraph
             
-            dw_sub.append(dw)
+            # keep an record of the successful sliding subgraphs and their dw
+            g1_sliding_list.append(g1_sliding)                   
+            G1_sliding_list.append(G1_sliding)
+            dw_sliding_list.append(dw)
             
-            # FGWD
-            alpha = 0.5
+            # %%FGWD
+            # alpha = 0.5
             dfgw, log_FGWD, transp_FGWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
-                alpha=alpha, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy)
+                alpha=alpha2, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_sliding, G2, p1, p2, p2_nodummy)
             
-            #%% 
-            dfgw_sub.append(dfgw)
-            transp_FGWD_sub.append(transp_FGWD)
-            G1_subgraph_sub.append(G1_subgraph)
+            # keep an record of the successful dfgw and transp
+            dfgw_sliding_list.append(dfgw)
+            transp_FGWD_sliding_list.append(transp_FGWD)
             
-            # %% FGWD, find alpha
+            
+        # %% FGWD, find alpha
             # alld=[]
             # x=np.linspace(0,1,10)
             # for alpha in x:
@@ -571,141 +555,215 @@ for N3 in NN3:
     
             # print('Wasserstein distance={}, Gromov distance={} \nFused Gromov-Wasserstein distance for alpha {} = {}'.format(dw,dgw,alpha,dfgw))
 
-        #%% get the min dfgw from the sliding subgraphs
-        dgfw_sub_min = min(dfgw_sub)
-        min_index = dfgw_sub.index(dgfw_sub_min)
         
-        transp_FGWD_sub_min = transp_FGWD_sub[min_index]
-        G1_subgraph_min = G1_subgraph_sub[min_index]
+        #%% get the min dfgw from the sliding records
+        dgfw_sliding_min = min(dfgw_sliding_list)
+        min_index = dfgw_sliding_list.index(dgfw_sliding_min)
         
-        dw_sub_min = dw_sub[min_index]
+        transp_FGWD_sliding_min = transp_FGWD_sliding_list[min_index]
         
-        print("FGWD", dgfw_sub_min)
-        # print("transp", transp_FGWD_sub_min)
-        print("WD", dw_sub_min)
+        g1_sliding_min = g1_sliding_list[min_index]      
+        G1_sliding_min = G1_sliding_list[min_index]      
+        dw_sliding_min = dw_sliding_list[min_index]
+        
+        print("FGWD", dgfw_sliding_min)
+        # print("transp", transp_FGWD_sliding_min)
+        print("WD", dw_sliding_min)
 
-
-        if Is_fig == 1:
+        if Is_fig:
             vmin = 0
             vmax = 9  # the range of color
             fig = plt.figure(figsize=(10, 8))
             plt.title('Optimal FGWD coupling')
-            draw_transp(G1_subgraph_min, G2, transp_FGWD_sub_min, shiftx=2, shifty=0.5, thresh=thresh,
+            draw_transp(G1_sliding_min, G2, transp_FGWD_sliding_min, shiftx=2, shifty=0.5, thresh=thresh,  # check the node order when drawing
                         swipy=True, swipx=False, with_labels=True, vmin=vmin, vmax=vmax)
             plt.show()
         
 
-        #%%
-        dgfw_sub_min_norm=dgfw_sub_min/N # modified obj values 
-        DFGW[num] = dgfw_sub_min_norm
+        # %% contruct the found subgraph            
+        # # indexes of the largest values of each column except the last column
+        # transp_FGWD_sliding_min_nolast = transp_FGWD_sliding_min[:, 0:-1]
+        # index = np.argwhere(transp_FGWD_sliding_list_min_nolast == np.max(transp_FGWD_sliding_list_min_nolast,axis=0))      
+        # # Get the indices that would sort the second column in ascending order
+        # sort_indices = np.argsort(index[:, 1])
+        # index = index[sort_indices]
+        # nodes_found = set(list((index[:, 0])))
         
-        def check_transp(transp):
-            for i in range(N - 1):
-                diagonal_element = transp[i, i]
-                row_max = np.max(transp[i, :])  # Maximum element in the current row up to the diagonal
-                if diagonal_element != row_max:
-                    return False
+        # nodes_found = set(np.argmax(transp_FGWD_sliding_min[:, :-1], axis=0)) # be careful about the node indices
         
-            return True  # All conditions are met
+        # g1_subgraph_found = g1.subgraph(nodes_found).copy() # taken out from g1 is the induced subgraph that we found 
         
-        if check_transp(transp_FGWD_sub_min):
-            yes3 +=1 
+        # def info(g):
+        #     # print the features of g
+        #     for node in g.nodes(data=True):
+        #         node_id, attributes = node
+        #         for key, value in attributes.items():
+        #             print(f"Node {node_id}:", f"{key}: {value}")
+                    
+        #     # print the adj matrix of g
+        #     g_adj = nx.to_numpy_array(g)
+        #     print("Adjacency Matrix:", g_adj)
             
-        if dgfw_sub_min_norm < thre1 or check_transp(transp_FGWD_sub_min):  # still cannot include all the possibilities, the actual rate would be higher
-            yes1 += 1
-        if dgfw_sub_min_norm < thre2:
-            yes2 += 1
-            
-        DIA.append(g2_diameter) # for different diameter
+        # if Is_info:
+        #     info(g1_subgraph_found)
+        #     info(g2_nodummy)
         
-       
-        
-        num += 1
-        # print(num)
-        
-        
-        # %% check the features and structure
-        if Is_info:
-            index = np.argwhere(transp_FGWD[:, 0:-1] > 1e-3)
+        #%% check feature and structure to decide if it find an exact matching
+        def check_transp(transp, h1, h2, Is_info):
+               
+            transp_nolast = transp[:, 0:-1]
+            index = np.argwhere(transp_nolast == np.max(transp_nolast,axis=0))     
+            # index = np.argwhere(transp_FGWD_sliding_min[:, 0:-1] > 1e-3)
             # Get the indices that would sort the second column in ascending order
             sort_indices = np.argsort(index[:, 1])
-            index = index[sort_indices]
+            index = index[sort_indices] # sorted with the second column
+            
             # feature
-            Features_source = list(g1._node.values())
-            print("Features of subgraph within the source graph:")
-            for source in index[:, 0]:  # source is int
-                print(Features_source[source])
-    
-            print("Features of the query graph:")
-            Features_target = list(g2_nodummy._node.values())
-            for target in index[:, 1]:
-                print(Features_target[target])
-    
+            nodes1=h1.nodes() # [dict]
+            nodes2=h2.nodes()
+            Keys1 = sorted(list(h1.nodes.keys()))  # [list] order of nodes for cost matrices, from small to large
+            Keys2 = sorted(list(h2.nodes.keys()))
+            Fea1 = []
+            Fea2 = []
+            for i in range(index.shape[0]):                
+                key1 = Keys1[index[i,0]]
+                key2 = Keys2[index[i,1]]
+                f1 = nodes1[key1]['attr_name']
+                f2 = nodes2[key2]['attr_name']
+                Fea1.append(f1)
+                Fea2.append(f2)
+                
+            if Fea1 != Fea2:
+                print("feature is different")
+                return False 
+            
+            if Is_info: 
+                # with ascending order of both graphs
+                print("Features of subgraph within the source graph:")
+                print(Fea1)
+                print("Features of the query graph:")
+                print(Fea2)
+                
+            # structure (create adj matrix in ascending order)
+            # print("Neighbours of source subgraph:")
+            # Structure_keys = list(h1._node.keys())
+            # Structure_source = list(h1._adj.values())
+            # Structure_source2 = {}  # the subgraph within the large graph, but with irrelevant nodes
+            # for source in index[:, 0]:
+            #     Structure_source2[Structure_keys[source]
+            #                       ] = Structure_source[source]
+
+            # temp_keys = list(Structure_source2.keys())
+            # for key in temp_keys:
+            #     for k in Structure_source2[key].copy():
+            #         if k not in temp_keys:
+            #             # delete the irrelevant nodes
+            #             Structure_source2[key].pop(k, None)
+            #     print(Structure_source2[key])
+
+            # print("Neighbours of query graph:")
+            # Structure_target = list(g2_nodummy._adj.values())
+            # for target in index[:, 1]:
+            #     print(Structure_target[target])
+
+
+            # # Adj matrix
+            # def generate_adjacency_matrix(graph_dict):
+            #     # Get all unique nodes from the dictionary keys
+            #     nodes = list(graph_dict.keys())
+            #     num_nodes = len(nodes)
+
+            #     # Initialize an empty adjacency matrix with zeros
+            #     adjacency_matrix = [[0] * num_nodes for _ in range(num_nodes)]
+
+            #     # Iterate over the graph dictionary
+            #     for node, connections in graph_dict.items():
+            #         # Get the index of the current node
+            #         node_index = nodes.index(node)
+
+            #         # Iterate over the connected nodes
+            #         for connected_node in connections.keys():
+            #             # Get the index of the connected node
+            #             connected_node_index = nodes.index(connected_node)
+
+            #             # Set the corresponding entry in the adjacency matrix to 1
+            #             adjacency_matrix[node_index][connected_node_index] = 1
+
+            #     return adjacency_matrix
+
+            # adjacency_subgraph = generate_adjacency_matrix(Structure_source2)
+            # adjacency_query = generate_adjacency_matrix(g2_nodummy._adj)
+            
+            
+                
             # structure
-            print("Neighbours of source subgraph:")
-            Structure_keys = list(g1._node.keys())
-            Structure_source = list(g1._adj.values())
-            Structure_source2 = {}  # the subgraph within the large graph, but with irrelevant nodes
-            for source in index[:, 0]:
-                Structure_source2[Structure_keys[source]
-                                  ] = Structure_source[source]
+            A1 = nx.to_numpy_array(h1, nodelist=Keys1)
+            A2 = nx.to_numpy_array(h2, nodelist=Keys2)
+            
+            # Create a submatrix using the index_vector
+            a1 = A1[np.ix_(index[:,0], index[:,0])]
+            
+            # Ensure that the submatrix is symmetric
+            a1 = np.maximum(a1, a1.T)
+            
+            if Is_info: 
+                print("Adjacency matrix within the source graph")
+                print(a1)
     
-            temp_keys = list(Structure_source2.keys())
-            for key in temp_keys:
-                for k in Structure_source2[key].copy():
-                    if k not in temp_keys:
-                        # delete the irrelevant nodes
-                        Structure_source2[key].pop(k, None)
-                print(Structure_source2[key])
-    
-            print("Neighbours of query graph:")
-            Structure_target = list(g2_nodummy._adj.values())
-            for target in index[:, 1]:
-                print(Structure_target[target])
-    
-            # Adj matrix
-    
-            def generate_adjacency_matrix(graph_dict):
-                # Get all unique nodes from the dictionary keys
-                nodes = list(graph_dict.keys())
-                num_nodes = len(nodes)
-    
-                # Initialize an empty adjacency matrix with zeros
-                adjacency_matrix = [[0] * num_nodes for _ in range(num_nodes)]
-    
-                # Iterate over the graph dictionary
-                for node, connections in graph_dict.items():
-                    # Get the index of the current node
-                    node_index = nodes.index(node)
-    
-                    # Iterate over the connected nodes
-                    for connected_node in connections.keys():
-                        # Get the index of the connected node
-                        connected_node_index = nodes.index(connected_node)
-    
-                        # Set the corresponding entry in the adjacency matrix to 1
-                        adjacency_matrix[node_index][connected_node_index] = 1
-    
-                return adjacency_matrix
-    
-            adjacency_subgraph = generate_adjacency_matrix(Structure_source2)
-            print("Adjacency matrix within the source graph")
-            print(adjacency_subgraph)
-    
-            adjacency_query = generate_adjacency_matrix(g2_nodummy._adj)
-            print("Adjacency matrix of query graph")
-            print(adjacency_query)
+                print("Adjacency matrix of query graph")
+                print(A2)
 
-        # %%
-    print('Rate 1:',yes1/Num)
-    print('Rate 2:',yes2/Num)
-    print('Rate of finding the original query', yes3/Num)
+            if np.array_equal(a1, A2) == 0:
+                print("structure is different")
+                return False
+            
+            return True
+        
+        if check_transp(transp_FGWD_sliding_min, g1_sliding_min, g2_nodummy, Is_info):
+            print("These two graphs are the same.")
+            # yes+=1
+            index3.append(1)
+        else:
+            index3.append(0)
+
+        # %% keep a record of this iter
+        # dgfw_min_norm = dgfw_sliding_min / N # modified obj values 
+        dgfw_min_norm = dgfw_sliding_min
+        
+        DFGW[num] = dgfw_min_norm # final results of this iter (2 random graphs)
+        
+        transp_FGWD_sliding_min_x.append(transp_FGWD_sliding_min)        
+        
+        g1_sliding_min_x.append(g1_sliding_min)
+        G1_sliding_min_x.append(G1_sliding_min)
+        dw_sliding_x.append(dw_sliding_min)
+        
+        # g1_subgraph_found_x.append(g1_subgraph_found)
+        g2_nodummy_x.append(g2_nodummy)
+        
+        #%%
+        num +=1 # only succeed then proceed
+        
+    # %%
+    index1 = [index for index, value in enumerate(DFGW) if value < thre1]
+    Rate1 = len(index1) / Num
+    index2 = [index for index, value in enumerate(DFGW) if value < thre2]
+    Rate2 = len(index2) / Num
+    index3 = [index for index, value in enumerate(index3) if value == 1]
+    # index3 = [i for i in range(len(g2_nodummy_x)) if nx.is_isomorphic(g2_nodummy_x[i], g1_subgraph_found_x[i])]
+    Rate3 = len(index3) / Num 
+    # Rate3 = yes / Num
+    
+    print('Rate 1: FGWD is almost zero', Rate1)
+    print('Rate 2: find the approx matching:', Rate2)
+    print('Rate 3: the matching is exactly right', Rate3)
     print('STD:',np.std(DFGW))
-
+    
     DFGW_set.append(DFGW)
-    Percent1.append(yes1/Num)
-    Percent2.append(yes2/Num)
-
+    Percent1.append(Rate1)
+    Percent2.append(Rate2)
+    Percent3.append(Rate3)
+    
     Mean.append(np.mean(DFGW))
     STD.append(np.std(DFGW))
     

@@ -182,9 +182,15 @@ def cg(a, b, M, reg, f, df, G0=None, numItermax=500, stopThr=1e-09, verbose=Fals
         G = np.outer(a, b)   # use "outer" to initialize G=G0
     else:
         G = G0
-
+    
+    n = len(a)
+    m = len(b)
     def cost(G):  # objective of FGWD
-        return np.sum(M * G) + reg * f(G)  # (Regularized discrete optimal transport)
+        obj = np.sum(M * G) / (m/n) + reg * f(G) / (pow(m,2)/pow(n,2))
+        
+        # obj = np.sum(M * G) + reg * f(G) # original FGWD
+        # obj = obj / ((1-reg)*m/n + reg*pow(m,2)/pow(n,2)) # normalized FGWD
+        return obj  # (Regularized discrete optimal transport)
                                             # for GWD, M is zero matrix. and reg=1
                                             # M is actually already (1-alpha)M for FGWD
                                             
@@ -237,9 +243,10 @@ def cg(a, b, M, reg, f, df, G0=None, numItermax=500, stopThr=1e-09, verbose=Fals
         
         # alpha = 2/(iter+2)
         
-        if alpha is None or np.isnan(alpha) :
-            # raise NonConvergenceError('Alpha was not found')
-            alpha = 0.99
+        if alpha is None or np.isnan(alpha):
+            raise NonConvergenceError('Alpha was not found')
+            # alpha = 0.99
+            # alpha = 2/(iter+2)
         else:
             G = G + alpha * deltaG #xt+1=xt +alpha dt
 
