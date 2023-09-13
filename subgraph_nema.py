@@ -177,7 +177,7 @@ def random_string(length):
 
 #%% Randomly select a graph
 random_number = random.randint(0, NumG - 1) # randomly select a graph
-random_number = 1
+random_number = 0
 # g3 = random.choice(X).nx_graph
 x = X[random_number].nx_graph
 
@@ -187,11 +187,12 @@ target_labels = []
 for i in range(len(target_id)):
     key = target_id[i]
     target_labels.append(target_nodes[key]['attr_name'])
+target_edges = list(x.edges())
 
 #%% create connected query graphs by BFS
 # Randomly select a graph
 random_number = random.randint(0, NumG - 1) # randomly select a graph
-random_number = 1
+random_number = 0
 # g3 = random.choice(X).nx_graph
 g3 = X[random_number].nx_graph
 while N > len(g3.nodes()):
@@ -224,6 +225,24 @@ query_labels = []
 for i in range(len(query_id)):
     key = query_id[i]
     query_labels.append(query_nodes[key]['attr_name'])
+query_edges = list(subgraph.edges())
+
+#%%
+def relabel_graph(ids, edges):
+    # Create a mapping from old node IDs to new node IDs
+    old_to_new = {node: idx for idx, node in enumerate(ids)}
+
+    # Create a list of new edges with updated node IDs
+    new_edges = [(old_to_new[start], old_to_new[end]) for start, end in edges]
+
+    # Create a list of new ids, simply using the range of new IDs
+    new_ids = list(range(len(ids)))
+
+    return new_ids, new_edges
+
+target_id, target_edges = relabel_graph(target_id, target_edges)
+query_id, query_edges = relabel_graph(query_id, query_edges)
+
 
 #%%
 # query_labels = ['guardians', 'groot', 'star','a','a'] # 4 features, 5 nodes
@@ -282,8 +301,9 @@ nodes_df = pd.DataFrame(data1)
 # }
 
 
-start_ids = [edge[0] for edge in x.edges()]
-end_ids = [edge[1] for edge in x.edges()]
+start_ids = [edge[0] for edge in target_edges]
+end_ids = [edge[1] for edge in target_edges]
+
 
 data2 = {
     'Index': list(range(len(start_ids))),  # First column with indexes starting from 0 # edges indices
@@ -471,14 +491,15 @@ with fornax.Connection('sqlite:///mydb.sqlite') as conn:
     #          (2,3), (2,4),
     #          (3,4)
     # ]
-    edges = list(subgraph.edges())
     
-    # Create a mapping from old query_id values to new ones
-    query_id_mapping = {old_id: new_id for new_id, old_id in enumerate(set(query_id))}
-    # Update query_id using the mapping
-    query_id = [query_id_mapping[old_id] for old_id in query_id]
-    # Update edges using the updated query_id values
-    edges = [(query_id_mapping[source], query_id_mapping[target]) for source, target in edges]
+    edges = query_edges
+    
+    # # Create a mapping from old query_id values to new ones
+    # query_id_mapping = {old_id: new_id for new_id, old_id in enumerate(set(query_id))}
+    # # Update query_id using the mapping
+    # query_id = [query_id_mapping[old_id] for old_id in query_id]
+    # # Update edges using the updated query_id values
+    # edges = [(query_id_mapping[source], query_id_mapping[target]) for source, target in edges]
     
     sources, targets = zip(*edges)
     
