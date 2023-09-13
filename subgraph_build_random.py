@@ -47,14 +47,14 @@ N = 5  # nodes in query
 NN3 = [45]
 # Pw = np.linspace(0.1, 1, 10)
 # Pw = [0.1]
-pw1 = 0.5  # query
+pw1 = 0.1  # query
 # pw1 = np.random.choice(np.linspace(0.1, 1, 10))
-pw2 = 0.5  # target
+pw2 = 0.1  # target
 # Sigma2=[0.01,0.1,0.5,1,2,3,4]
 # Sigma2=[0.01]
 # sigma1=0.1
 # sigma2=0.1
-numfea = 4
+numfea = 15
 # NumFea = list(range(1, 11))  # from 1 to 20
 # NumFea = [2]
 

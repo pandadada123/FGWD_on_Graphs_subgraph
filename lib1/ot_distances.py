@@ -310,9 +310,11 @@ class Fused_Gromov_Wasserstein_distance():
                         f1 = np.array( nodes1[key1]['attr_name'] )
                         f2 = np.array( nodes2[key2]['attr_name'] )
                         if f1.shape != f2.shape:
-                            M[i,j] = LargeValue
+                            # M[i,j] = LargeValue
+                            M[i,j] = 1
                         else: 
-                            M[i][j]=np.sum([pow(f1-f2 ,2)])
+                            M[i][j]=1-1/(1+np.sum([pow(f1-f2 ,2)]))
+                # M = M/np.max(M) # normalized this cost matrix
                         
             elif self.features_metric=='jaccard':
                 for i in range(n1):
