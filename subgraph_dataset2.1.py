@@ -36,8 +36,8 @@ import pickle
 
 thre1 = 1e-9
 # thre2=-0.015000 # entropic
-thre2 = 1e-4    
-epsilon = 1e-2
+thre2 = 1e-2
+epsilon = thre2
         
 Is_fig = 0
 Is_info = 0
@@ -48,7 +48,7 @@ Is_create_query_deter = 0
 Is_check_found_subgraph = 0
 Is_check_transp = 1
 
-N = 5 # nodes in query
+N = 6 # nodes in query
 Is_fea_noise = 1
 Is_str_noise = 0
 
@@ -167,7 +167,7 @@ yes2 = 0
 yes3 = 0
 yes4 = 0
 DFGW = np.zeros(NumQ)
-DIA = []
+# DIA = []
 Ratio = np.zeros(NumQ)
 missing_files_count = 0
 
@@ -243,7 +243,7 @@ for num in range(NumQ):
         with open(file_path_1, 'rb') as file1:
                 g2_nodummy_original = pickle.load(file1)
         
-        folder_path_2 = "E:\Master Thesis\dataset\data\BZR\query"
+        folder_path_2 = "E:\Master Thesis\dataset\data\BZR\query_noise_1e-2"
         file_path_2 = os.path.join(folder_path_2, file_name)
         with open(file_path_2, 'rb') as file2:
                 g2_nodummy = pickle.load(file2)
@@ -351,192 +351,161 @@ for num in range(NumQ):
     
         return h_hop_subgraph
     
-    #%% go over every graph in the dataset
-    dfgw_x = []
-    transp_x = []
-    dw_x = []
-    G1_subgraph_x = []
-    
-    jj=0
-    for G1 in X:
-        print("graph index", jj)
-        jj+=1
-        g1=G1.nx_graph
+    #%% 
+    G1 = X[num]
+    g1=G1.nx_graph
         
-        #%% go over every node in target
-        g1_subgraph_list=[]
-        dfgw_sub = []
-        transp_FGWD_sub = []
-        G1_subgraph_sub = []
-        dw_sub = []
+    #%% go over every node in target
+    g1_subgraph_list=[]
+    dfgw_sub = []
+    transp_FGWD_sub = []
+    G1_subgraph_sub = []
+    dw_sub = []
+    
+    ii=0
+    for center_node in g1.nodes():
+        print(ii)
+        ii+=1
+    
+        # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter/2))  # sometimes could not include the subgraph in the big graph
+        # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter))
+        g1_subgraph = create_h_hop_subgraph(g1, center_node, h = g2_longest_path_from_center)
+        g1_subgraph_list.append(g1_subgraph)                   
+
+        G1_subgraph = Graph(g1_subgraph)
         
-        ii=0
-        for center_node in g1.nodes():
-            print(ii)
-            ii+=1
+        if len(G1_subgraph.nodes()) < len(G2_nodummy.nodes()):  
+            print("The sliding subgraph did not get enough nodes.")
+            continue
         
-            # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter/2))  # sometimes could not include the subgraph in the big graph
-            # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter))
-            g1_subgraph = create_h_hop_subgraph(g1, center_node, h = g2_longest_path_from_center)
-            g1_subgraph_list.append(g1_subgraph)                   
-    
-            G1_subgraph = Graph(g1_subgraph)
-            
-            if len(G1_subgraph.nodes()) < len(G2_nodummy.nodes()):  
-                print("The sliding subgraph did not get enough nodes.")
-                continue
-            
-            G2 = copy.deepcopy(G2_nodummy)
-            
-            Large = 1e6
-            if fea_metric == 'jaccard':
-                G2.add_attributes({Large: "0"})  # add dummy  
-            elif fea_metric == 'sqeuclidean':
-                G2.add_attributes({Large: np.array([0])  })  # add dummy 
-            elif fea_metric == 'dirac':
-                G2.add_attributes({Large: 0})  # add dummy      
-            
-    
-            # %% plot the graphs
-            if Is_fig == 1:
-                vmin = 0
-                vmax = 9  # the range of color
+        G2 = copy.deepcopy(G2_nodummy)
         
-                plt.figure(figsize=(8, 5))
-                # create some bugs in the nx.draw_networkx, don't know why.
-                draw_rel(g1_subgraph, vmin=vmin, vmax=vmax, with_labels=True, draw=False)
-                draw_rel(g2_nodummy, vmin=vmin, vmax=vmax,
-                          with_labels=True, shiftx=3, draw=False)
-                plt.title('Sliding subgraph and query graph: Color indicates the label')
-                plt.show()
-    
-            # %% weights and feature metric
-            p1 = ot.unif(len(G1_subgraph.nodes()))
-            # ACTUALLY NOT USED IN THE ALGORITHM
-            p2_nodummy = 1/len(G1_subgraph.nodes()) * np.ones([len(G2_nodummy.nodes())])
-            p2 = np.append(p2_nodummy, 1-sum(p2_nodummy))
-    
-            
-    
-            # %% use the function from FGWD all the time
-            thresh = 0.004
-            # WD
-            # dw, log_WD, transp_WD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
-            #     alpha=0, features_metric=fea_metric, method='shortest_path', loss_fun='square_loss').graph_d(G1, G2, p1, p2, p2_nodummy)
-            # fig=plt.figure(figsize=(10,8))
-            # plt.title('WD coupling')
-            # draw_transp(G1,G2,transp_WD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
-            # plt.show()
-    
-            # GWD
-            # dgw, log_GWD, transp_GWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
-            #     alpha=1, features_metric=fea_metric, method='shortest_path', loss_fun='square_loss').graph_d(G1, G2, p1, p2, p2_nodummy)
-            # fig=plt.figure(figsize=(10,8))
-            # plt.title('GWD coupling')
-            # draw_transp(G1,G2,transp_GWD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
-            # plt.show()
-            #%% Wasserstein filtering
-            # epsilon = thre2
-            # epsilon = thre2
-            # alpha = 0
-            dw, log_WD, transp_WD, M, C1, C2  = Fused_Gromov_Wasserstein_distance(
-                alpha=alpha1, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy)
-            
-            if dw > epsilon:
-                print("filter out")
-                continue
-            
-            dw_sub.append(dw)
-            
-            #%% FGWD
-            # alpha = 0.5
-            dfgw, log_FGWD, transp_FGWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
-                alpha=alpha2, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy)
-            
-            #%% results from all sliding subgraphs
-            dfgw_sub.append(dfgw)
-            transp_FGWD_sub.append(transp_FGWD)
-            G1_subgraph_sub.append(G1_subgraph)
-            
+        Large = 1e6
+        if fea_metric == 'jaccard':
+            G2.add_attributes({Large: "0"})  # add dummy  
+        elif fea_metric == 'sqeuclidean':
+            G2.add_attributes({Large: np.array([0])  })  # add dummy 
+        elif fea_metric == 'dirac':
+            G2.add_attributes({Large: 0})  # add dummy      
         
-            
-            # %% FGWD, find alpha
-            # alld=[]
-            # x=np.linspace(0,1,10)
-            # for alpha in x:
-            #     d,log,transp=Fused_Gromov_Wasserstein_distance(alpha=alpha,features_metric=fea_metric).graph_d(G1,G2,p1,p2,p2_nodummy)
-            #     alld.append(d)
-            # fig=plt.figure(figsize=(10,8))
-            # plt.plot(x,alld)
-            # plt.title('Evolution of FGW dist in wrt alpha \n max={}'.format(x[np.argmax(alld)]))
-            # plt.xlabel('Alpha')
-            # plt.xlabel('FGW dist')
-            # plt.show()
+
+        # %% plot the graphs
+        if Is_fig == 1:
+            vmin = 0
+            vmax = 9  # the range of color
     
-            # # optimal matching
-            # fig=plt.figure(figsize=(10,8))
-            # thresh=0.004
-            # alpha_opt=x [ alld.index(max(alld)) ]
-            # dfgw_opt,log_FGWD_opt,transp_FGWD_opt=Fused_Gromov_Wasserstein_distance(alpha=alpha_opt,features_metric=fea_metric).graph_d(G1,G2,p1,p2,p2_nodummy)
-            # # d=dfgw.graph_d(g1,g2)
-            # # plt.title('FGW coupling, dist : '+str(np.round(dfgw,3)),fontsize=15)
-            # plt.title('FGW coupling, alpha = opt')
-            # draw_transp(G1,G2,transp_FGWD_opt,shiftx=2,shifty=0.5,thresh=thresh,
-            #             swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
-            # plt.show()
-    
-            # print('Wasserstein distance={}, Gromov distance={} \nFused Gromov-Wasserstein distance for alpha {} = {}'.format(dw,dgw,alpha,dfgw))
-    
-        #%% get the min dfgw from the sliding subgraphs
-        try:
-            dgfw_sub_min = min(dfgw_sub)
-            min_index = dfgw_sub.index(dgfw_sub_min)
-            
-            transp_FGWD_sub_min = transp_FGWD_sub[min_index]
-            G1_subgraph_min = G1_subgraph_sub[min_index]
-            
-            dw_sub_min = dw_sub[min_index]
-        except:
-            print("No subgraph in this graph")
-            dgfw_sub_min = np.nan
-            transp_FGWD_sub_min = np.nan
-            G1_subgraph_min = np.nan
-            dw_sub_min = np.nan
+            plt.figure(figsize=(8, 5))
+            # create some bugs in the nx.draw_networkx, don't know why.
+            draw_rel(g1_subgraph, vmin=vmin, vmax=vmax, with_labels=True, draw=False)
+            draw_rel(g2_nodummy, vmin=vmin, vmax=vmax,
+                      with_labels=True, shiftx=3, draw=False)
+            plt.title('Sliding subgraph and query graph: Color indicates the label')
+            plt.show()
+
+        # %% weights and feature metric
+        p1 = ot.unif(len(G1_subgraph.nodes()))
+        # ACTUALLY NOT USED IN THE ALGORITHM
+        p2_nodummy = 1/len(G1_subgraph.nodes()) * np.ones([len(G2_nodummy.nodes())])
+        p2 = np.append(p2_nodummy, 1-sum(p2_nodummy))
+
         
-        #%% results from all graphs
-        dfgw_x.append(dgfw_sub_min)
-        transp_x.append(transp_FGWD_sub_min)
-        dw_x.append(dw_sub_min)
-        G1_subgraph_x.append(G1_subgraph_min)
+
+        # %% use the function from FGWD all the time
+        thresh = 0.004
+        # WD
+        # dw, log_WD, transp_WD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
+        #     alpha=0, features_metric=fea_metric, method='shortest_path', loss_fun='square_loss').graph_d(G1, G2, p1, p2, p2_nodummy)
+        # fig=plt.figure(figsize=(10,8))
+        # plt.title('WD coupling')
+        # draw_transp(G1,G2,transp_WD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
+        # plt.show()
+
+        # GWD
+        # dgw, log_GWD, transp_GWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
+        #     alpha=1, features_metric=fea_metric, method='shortest_path', loss_fun='square_loss').graph_d(G1, G2, p1, p2, p2_nodummy)
+        # fig=plt.figure(figsize=(10,8))
+        # plt.title('GWD coupling')
+        # draw_transp(G1,G2,transp_GWD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
+        # plt.show()
+        #%% Wasserstein filtering
+        # epsilon = thre2
+        # epsilon = thre2
+        # alpha = 0
+        dw, log_WD, transp_WD, M, C1, C2  = Fused_Gromov_Wasserstein_distance(
+            alpha=alpha1, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy)
         
-    #%% get the min dfgw from all graphs in X
-    try: 
-        dfgw_x_min = min([x for x in dfgw_x if not math.isnan(x)])
-        min_index_x = dfgw_x.index(dfgw_x_min)
-        transp_x_min = transp_x[min_index_x]
-        G1_subgraph_x_min = G1_subgraph_x[min_index_x]
-        dw_x_min = dw_x[min_index_x]
+        if dw > epsilon:
+            print("filter out")
+            continue
+        
+        dw_sub.append(dw)
+        
+        #%% FGWD
+        # alpha = 0.5
+        dfgw, log_FGWD, transp_FGWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
+            alpha=alpha2, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy)
+        
+        #%% results from all sliding subgraphs
+        dfgw_sub.append(dfgw)
+        transp_FGWD_sub.append(transp_FGWD)
+        G1_subgraph_sub.append(G1_subgraph)
+        
+    
+        
+        # %% FGWD, find alpha
+        # alld=[]
+        # x=np.linspace(0,1,10)
+        # for alpha in x:
+        #     d,log,transp=Fused_Gromov_Wasserstein_distance(alpha=alpha,features_metric=fea_metric).graph_d(G1,G2,p1,p2,p2_nodummy)
+        #     alld.append(d)
+        # fig=plt.figure(figsize=(10,8))
+        # plt.plot(x,alld)
+        # plt.title('Evolution of FGW dist in wrt alpha \n max={}'.format(x[np.argmax(alld)]))
+        # plt.xlabel('Alpha')
+        # plt.xlabel('FGW dist')
+        # plt.show()
+
+        # # optimal matching
+        # fig=plt.figure(figsize=(10,8))
+        # thresh=0.004
+        # alpha_opt=x [ alld.index(max(alld)) ]
+        # dfgw_opt,log_FGWD_opt,transp_FGWD_opt=Fused_Gromov_Wasserstein_distance(alpha=alpha_opt,features_metric=fea_metric).graph_d(G1,G2,p1,p2,p2_nodummy)
+        # # d=dfgw.graph_d(g1,g2)
+        # # plt.title('FGW coupling, dist : '+str(np.round(dfgw,3)),fontsize=15)
+        # plt.title('FGW coupling, alpha = opt')
+        # draw_transp(G1,G2,transp_FGWD_opt,shiftx=2,shifty=0.5,thresh=thresh,
+        #             swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
+        # plt.show()
+
+        # print('Wasserstein distance={}, Gromov distance={} \nFused Gromov-Wasserstein distance for alpha {} = {}'.format(dw,dgw,alpha,dfgw))
+    
+    #%% get the min dfgw from the sliding subgraphs
+    try:
+        dgfw_sub_min = min(dfgw_sub)
+        min_index = dfgw_sub.index(dgfw_sub_min)
+        
+        transp_FGWD_sub_min = transp_FGWD_sub[min_index]
+        G1_subgraph_min = G1_subgraph_sub[min_index]
+        
+        dw_sub_min = dw_sub[min_index]
     except:
-        dfgw_x_min = np.nan
-        min_index_x = np.nan
-        transp_x_min = np.nan
-        G1_subgraph_x_min = np.nan
-        dw_x_min = np.nan
+        print("No subgraph in this graph")
+        dgfw_sub_min = np.nan
+        transp_FGWD_sub_min = np.nan
+        G1_subgraph_min = np.nan
+        dw_sub_min = np.nan
         
     
-    print("FGWD", dfgw_x_min)
-    print("transp", transp_x_min)
-    print("WD", dw_x_min)
-    
-    print("original graph index", graph_number)
-    print("found graph index", min_index_x)
+    print("FGWD", dgfw_sub_min)
+    # print("transp", transp_FGWD_sub_min)
+    print("WD", dw_sub_min)
     
     if Is_fig == 1:
         vmin = 0
         vmax = 9  # the range of color
         fig = plt.figure(figsize=(10, 8))
         plt.title('Optimal FGWD coupling')
-        draw_transp(G1_subgraph_x_min, G2, transp_FGWD_sub_min, shiftx=2, shifty=0.5, thresh=thresh,
+        draw_transp(G1_subgraph_min, G2, transp_FGWD_sub_min, shiftx=2, shifty=0.5, thresh=thresh,
                     swipy=True, swipx=False, with_labels=True, vmin=vmin, vmax=vmax)
         plt.show()
     
@@ -545,15 +514,15 @@ for num in range(NumQ):
     #%% get the final result for one query graph
     # dgfw_x_min_norm=dfgw_x_min/N # modified obj values 
     # dfgw_x_min = dfgw_x_min
-    DFGW[num] = dfgw_x_min
-    if dfgw_x_min < thre1:
+    DFGW[num] = dgfw_sub_min
+    if dgfw_sub_min < thre1:
         yes1 += 1
-    if dfgw_x_min < thre2:
+    if dgfw_sub_min < thre2:
         yes2 += 1
-    if graph_number == min_index_x:
-        yes4+=1
-        
-    DIA.append(g2_diameter) # for different diameter
+    # if graph_number == min_index_x:
+    #     yes4+=1
+    
+    # DIA.append(g2_diameter) # for different diameter
     
     #%% check feature and structure to decide if it find an exact matching
     def check_transp(transp, h1, h2, Is_info):
@@ -629,17 +598,20 @@ for num in range(NumQ):
     
     if Is_check_found_subgraph:
         # use the clean graph to check
-        if check_transp(transp_x_min, G1_subgraph_x_min.nx_graph, g2_nodummy_orignal, Is_info):
+        if check_transp(transp_FGWD_sub_min, G1_subgraph_min.nx_graph, g2_nodummy_orignal, Is_info):
             print("These two graphs are the same.")
             yes3+=1
             
     elif Is_check_transp:
-        if graph_number == min_index_x:
-            ratio = check_transp2(transp_x_min)
+        # if graph_number == min_index_x:
+        try:
+            ratio = check_transp2(transp_FGWD_sub_min)
             print("ratio", ratio)
             Ratio[num]=ratio 
-        else:
-            Ratio[num]=0
+        # else:
+        #     Ratio[num]=0
+        except:
+            Ratio[num] = 0
             
 # %% check the features and structure
 # if Is_info:
@@ -722,7 +694,7 @@ elif Is_check_transp:
     print('Rate 3: the ratio of correct nodes', np.mean(Ratio))
     
 print('STD:',np.std(DFGW))
-print('find the correct graph', yes4/NumQ)
+# print('find the correct graph', yes4/NumQ)
 
 DFGW_set.append(DFGW)
 Percent1.append(yes1/Num)

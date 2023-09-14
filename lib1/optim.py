@@ -184,7 +184,7 @@ def cg(a, b, M, reg, f, df, G0=None, numItermax=500, stopThr=1e-09, verbose=Fals
         G = G0
     
     n = len(a)
-    m = len(b)
+    m = len(b)-1
     def cost(G):  # objective of FGWD
         obj = np.sum(M * G) / (m/n) + reg * f(G) / (pow(m,2)/pow(n,2))
         

@@ -64,7 +64,8 @@ numfea = 15
 
 thre1 = 1e-9
 # thre2=-0.015000 # entropic
-thre2 = 1e-4       
+thre2 = 1e-2
+epsilon = thre2
         
 Is_fig = 0
 Is_info = 0
@@ -504,7 +505,7 @@ for N3 in NN3:
             # plt.show()
             
             #%% Wasserstein filtering
-            epsilon = thre1
+            # epsilon = thre1
             # alpha = 0
             dw, log_WD, transp_WD, M, C1, C2  = Fused_Gromov_Wasserstein_distance(
                 alpha=alpha1, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_sliding, G2, p1, p2, p2_nodummy)
