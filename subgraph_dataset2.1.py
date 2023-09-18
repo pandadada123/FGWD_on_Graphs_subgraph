@@ -243,7 +243,7 @@ for num in range(NumQ):
         with open(file_path_1, 'rb') as file1:
                 g2_nodummy_original = pickle.load(file1)
         
-        folder_path_2 = "E:\Master Thesis\dataset\data\BZR\query_noise_1e-2"
+        folder_path_2 = "E:\Master Thesis\dataset\data\BZR\query_noise_0.1"
         file_path_2 = os.path.join(folder_path_2, file_name)
         with open(file_path_2, 'rb') as file2:
                 g2_nodummy = pickle.load(file2)

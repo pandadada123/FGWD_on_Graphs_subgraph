@@ -28,6 +28,7 @@ import fornax
 import random
 import string
 import pickle
+import time
 
 import numpy as np
 from lib1.data_loader import load_local_data,histog,build_noisy_circular_graph
@@ -165,8 +166,9 @@ X,label=load_local_data(path,dataset_n,wl=0)
 
 NumG = len(X)
 
-# N = 6 # size of query
+N = 6 # size of query
 NumQ = NumG
+# NumQ=5
 
 Is_create_query = 0
 
@@ -183,7 +185,7 @@ def random_string(length):
 missing_files_count = 0
 Cost =np.zeros(NumQ)
 Ratio = np.zeros(NumQ)
-
+Time = np.zeros(NumQ)
 
 for num in range(1):
     print("num=",num)
@@ -278,7 +280,7 @@ for num in range(1):
         query_edges_original = list(g2_nodummy_original.edges())
         
         # noisy
-        folder_path_2 = "E:\Master Thesis\dataset\data\BZR\query"
+        folder_path_2 = "E:\Master Thesis\dataset\data\BZR\query_noise_0.1"
         file_path_2 = os.path.join(folder_path_2, file_name)
         with open(file_path_2, 'rb') as file2:
                 g2_nodummy = pickle.load(file2)
@@ -441,8 +443,8 @@ for num in range(1):
         scores = scores.replace(0, small_value)
         
         # create a boolean mask
-        # epsilon = 1e-2 # for noisy query
-        epsilon = 1e-9 # for clean query
+        epsilon = 1e-1 # for noisy query
+        # epsilon = 1e-9 # for clean query
         mask = scores > 1-epsilon
         # mask = scores > 0
         
@@ -478,6 +480,12 @@ for num in range(1):
     matches = pd.concat(search(id_, label) for id_, label in enumerate(query_labels))
     matches
     
+    unique_count = matches['query_id'].nunique()
+    if unique_count < N:
+        print("no enough nodes in the candidate set")
+        Ratio[num]=np.nan
+        continue
+
     
     # Fornax enables a more powerful type of search. 
     # By specifying 'guardians', 'star', 'groot' as nodes in a graph, 
@@ -597,8 +605,11 @@ for num in range(1):
     
     with fornax.Connection('sqlite:///mydb.sqlite') as conn:
         # get_ipython().run_line_magic('time', 'results = query.execute(n=5)')
+        start_time = time.time()
         results = query.execute(n=1, hopping_distance=1)  # top-n results
-    
+        end_time = time.time()
+        Time[num] = end_time - start_time
+        
     # ## Visualise
     # 
     # `query.execute` returns an object describing the search result.

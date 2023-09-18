@@ -29,6 +29,7 @@ from lib1.ot_distances import Fused_Gromov_Wasserstein_distance
 import scipy.stats as st
 import math
 import string
+import time
 
 N = 5  # nodes in query
 # NN =  [5,10,15,25,35,45,55]
@@ -39,17 +40,18 @@ N = 5  # nodes in query
 # NN2 =  [75,70,65,55,45,35,25]
 # NN2=[5]
 # N3 = [x+N for x in NN2]
-# NN3 = [15,20,25,35,45,55,65,75,85,95]
+NN3 = [15,20,25,35,45,55,65,75,85,95]
 # NN3 = [15,20,25]
 # NN3 = [15,45,75]
 # N3 = N+N2
-# N3 = 500
-NN3 = [45]
+N3 = 45
+# NN3 = [45]
 # Pw = np.linspace(0.1, 1, 10)
+# Pw = np.linspace(0.01, 0.1, 10)
 # Pw = [0.1]
 pw1 = 0.1  # query
 # pw1 = np.random.choice(np.linspace(0.1, 1, 10))
-pw2 = 0.1  # target
+pw2 = 0.05 # target
 # Sigma2=[0.01,0.1,0.5,1,2,3,4]
 # Sigma2=[0.01]
 # sigma1=0.1
@@ -65,7 +67,8 @@ numfea = 15
 thre1 = 1e-9
 # thre2=-0.015000 # entropic
 thre2 = 1e-2
-epsilon = thre2
+# thre2 = 0.05
+epsilon = thre1
         
 Is_fig = 0
 Is_info = 0
@@ -266,6 +269,7 @@ Percent1 = []
 Percent2 = []
 Percent3 = []
 Mean = []
+Time = []
 STD = []
 Lower = []
 Upper = []
@@ -286,6 +290,8 @@ for N3 in NN3:
     # yes=0
     index3 = []
     
+    time_x= np.zeros(Num)
+    
     while num < Num:
 
         plt.close("all")
@@ -293,6 +299,7 @@ for N3 in NN3:
         print("iter", num)
         
         # %% build G1
+        pw1=0.1
         G11 = build_comunity_graph(N=N, numfea=numfea, pw=pw1, fea_metric=fea_metric)
 
         # np.random.seed()  # different graph G1 every time
@@ -336,45 +343,6 @@ for N3 in NN3:
         #     plt.title('Original target graph and query graph: Color indicates the label')
         #     plt.show()
         
-        #%% Using the diameter constraint, but the sliding subgraph grows up quickly 
-        # def grow_subgraph(graph, center_node, target_diameter):
-        #     subgraph = nx.Graph()  # Initialize an empty subgraph
-        #     subgraph.add_node(center_node)  # Start with the center node
-        #     current_diameter = 0
-        
-        #     while current_diameter < target_diameter:
-        #         neighbors = list(subgraph.nodes())  # Get the current nodes in the subgraph
-        #         new_neighbors = []
-        
-        #         for node in neighbors:
-        #             new_neighbors.extend(graph.neighbors(node))
-        
-        #         # Remove nodes already in the subgraph to avoid duplicates
-        #         new_neighbors = set(new_neighbors) - set(subgraph.nodes())
-        
-        #         # Stop if there are no more new neighbors to add
-        #         if not new_neighbors:
-        #             break
-        
-        #         subgraph.add_nodes_from(new_neighbors)  # Add new neighbors to subgraph
-        #         current_diameter += 1
-        
-        #     return subgraph
-        
-        # def find_subgraph_with_diameter(graph, diameter):
-        #     induced_subgraph_list=[]
-        #     for center_node in graph.nodes():
-        #         subgraph_only_nodes = grow_subgraph(graph, center_node, diameter)
-        #         induced_subgraph = graph.subgraph(subgraph_only_nodes.nodes())
-        #         # if nx.diameter(induced_subgraph) == diameter:
-        #         induced_subgraph_list.append(induced_subgraph)                   
-                    
-        #     return induced_subgraph_list
-        
-        
-        # g2_diameter = nx.diameter(g2_nodummy)
-        # g1_sliding_list = find_subgraph_with_diameter(g1, diameter=g2_diameter)
-
 
         #%% Sliding window: deal with G2_nodummy
         # diameter of query 
@@ -414,7 +382,10 @@ for N3 in NN3:
             
             return longest_path_center
         
+        start_time_center = time.time()
         g2_longest_path_from_center = find_center_with_smallest_longest_hops(g2_nodummy)
+        end_time_center = time.time()
+        time_center = end_time_center - start_time_center  # almost zero
         
         #%% Sliding window: go over every node in target
         g1_sliding_list=[]        
@@ -424,6 +395,7 @@ for N3 in NN3:
         transp_FGWD_sliding_list = []
         
         ii=0
+        sliding_time = 0
         for center_node in g1.nodes():
             print(ii)
             ii+=1
@@ -446,9 +418,11 @@ for N3 in NN3:
             
             # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter/2))  # sometimes could not include the subgraph in the big graph
             # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter))
+            start_time=time.time()
+            time0=time.time()
             g1_sliding = create_h_hop_subgraph(g1, center_node, h = g2_longest_path_from_center)
             G1_sliding = Graph(g1_sliding)
-            
+            time1=time.time()
             if len(G1_sliding.nodes()) < len(G2_nodummy.nodes()):  
                 print("The sliding subgraph did not get enough nodes.")
                 continue # go to the next sliding subgraph
@@ -459,7 +433,7 @@ for N3 in NN3:
                 G2.add_attributes({len(G2.nodes()): "0"})  # add dummy            
             else:
                 G2.add_attributes({len(G2.nodes()): 0})  # add dummy      
-            
+            time2=time.time()
     
             # %% plot the graphs
             if Is_fig == 1:
@@ -485,7 +459,7 @@ for N3 in NN3:
             # p2_nodummy = np.ones([len(G2_nodummy.nodes())])
             # p2 = np.append(p2_nodummy, sum(p1)-sum(p2_nodummy))
             
-    
+            time3=time.time()
             # %% use the function from FGWD all the time
             thresh = 0.004
             # WD
@@ -509,60 +483,65 @@ for N3 in NN3:
             # alpha = 0
             dw, log_WD, transp_WD, M, C1, C2  = Fused_Gromov_Wasserstein_distance(
                 alpha=alpha1, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_sliding, G2, p1, p2, p2_nodummy)
-            
+            time4=time.time()
             if dw > epsilon:
                 print("filter out")
                 continue # go to the next sliding subgraph
-            
-            # keep an record of the successful sliding subgraphs and their dw
-            g1_sliding_list.append(g1_sliding)                   
-            G1_sliding_list.append(G1_sliding)
-            dw_sliding_list.append(dw)
-            
-            # %%FGWD
+            time5=time.time()
+            # %% FGWD
             # alpha = 0.5
             dfgw, log_FGWD, transp_FGWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
                 alpha=alpha2, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_sliding, G2, p1, p2, p2_nodummy)
+            time6=time.time()
+            end_time = time.time()
+            # %% keep an record of the successful sliding subgraphs and their dw
+            dw_sliding_list.append(dw)
             
+            g1_sliding_list.append(g1_sliding)                   
+            G1_sliding_list.append(G1_sliding)
+                
             # keep an record of the successful dfgw and transp
+                           
             dfgw_sliding_list.append(dfgw)
+            
             transp_FGWD_sliding_list.append(transp_FGWD)
             
+            sliding_time += end_time - start_time 
             
         # %% FGWD, find alpha
-            # alld=[]
-            # x=np.linspace(0,1,10)
-            # for alpha in x:
-            #     d,log,transp=Fused_Gromov_Wasserstein_distance(alpha=alpha,features_metric=fea_metric).graph_d(G1,G2,p1,p2,p2_nodummy)
-            #     alld.append(d)
-            # fig=plt.figure(figsize=(10,8))
-            # plt.plot(x,alld)
-            # plt.title('Evolution of FGW dist in wrt alpha \n max={}'.format(x[np.argmax(alld)]))
-            # plt.xlabel('Alpha')
-            # plt.xlabel('FGW dist')
-            # plt.show()
-    
-            # # optimal matching
-            # fig=plt.figure(figsize=(10,8))
-            # thresh=0.004
-            # alpha_opt=x [ alld.index(max(alld)) ]
-            # dfgw_opt,log_FGWD_opt,transp_FGWD_opt=Fused_Gromov_Wasserstein_distance(alpha=alpha_opt,features_metric=fea_metric).graph_d(G1,G2,p1,p2,p2_nodummy)
-            # # d=dfgw.graph_d(g1,g2)
-            # # plt.title('FGW coupling, dist : '+str(np.round(dfgw,3)),fontsize=15)
-            # plt.title('FGW coupling, alpha = opt')
-            # draw_transp(G1,G2,transp_FGWD_opt,shiftx=2,shifty=0.5,thresh=thresh,
-            #             swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
-            # plt.show()
-    
-            # print('Wasserstein distance={}, Gromov distance={} \nFused Gromov-Wasserstein distance for alpha {} = {}'.format(dw,dgw,alpha,dfgw))
+        # alld=[]
+        # x=np.linspace(0,1,10)
+        # for alpha in x:
+        #     d,log,transp=Fused_Gromov_Wasserstein_distance(alpha=alpha,features_metric=fea_metric).graph_d(G1,G2,p1,p2,p2_nodummy)
+        #     alld.append(d)
+        # fig=plt.figure(figsize=(10,8))
+        # plt.plot(x,alld)
+        # plt.title('Evolution of FGW dist in wrt alpha \n max={}'.format(x[np.argmax(alld)]))
+        # plt.xlabel('Alpha')
+        # plt.xlabel('FGW dist')
+        # plt.show()
+
+        # # optimal matching
+        # fig=plt.figure(figsize=(10,8))
+        # thresh=0.004
+        # alpha_opt=x [ alld.index(max(alld)) ]
+        # dfgw_opt,log_FGWD_opt,transp_FGWD_opt=Fused_Gromov_Wasserstein_distance(alpha=alpha_opt,features_metric=fea_metric).graph_d(G1,G2,p1,p2,p2_nodummy)
+        # # d=dfgw.graph_d(g1,g2)
+        # # plt.title('FGW coupling, dist : '+str(np.round(dfgw,3)),fontsize=15)
+        # plt.title('FGW coupling, alpha = opt')
+        # draw_transp(G1,G2,transp_FGWD_opt,shiftx=2,shifty=0.5,thresh=thresh,
+        #             swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
+        # plt.show()
+
+        # print('Wasserstein distance={}, Gromov distance={} \nFused Gromov-Wasserstein distance for alpha {} = {}'.format(dw,dgw,alpha,dfgw))
 
         
         #%% get the min dfgw from the sliding records
         dgfw_sliding_min = min(dfgw_sliding_list)
+        
         min_index = dfgw_sliding_list.index(dgfw_sliding_min)
         
-        transp_FGWD_sliding_min = transp_FGWD_sliding_list[min_index]
-        
+        transp_FGWD_sliding_min = transp_FGWD_sliding_list[min_index]        
         g1_sliding_min = g1_sliding_list[min_index]      
         G1_sliding_min = G1_sliding_list[min_index]      
         dw_sliding_min = dw_sliding_list[min_index]
@@ -729,12 +708,13 @@ for N3 in NN3:
 
         # %% keep a record of this iter
         # dgfw_min_norm = dgfw_sliding_min / N # modified obj values 
-        dgfw_min_norm = dgfw_sliding_min
+        # dgfw_min_norm = dgfw_sliding_min
         
-        DFGW[num] = dgfw_min_norm # final results of this iter (2 random graphs)
+        DFGW[num] = dgfw_sliding_min # final results of this iter (2 random graphs)
+        time_x[num] = sliding_time + time_center
+        print("time", time_x[num])
         
         transp_FGWD_sliding_min_x.append(transp_FGWD_sliding_min)        
-        
         g1_sliding_min_x.append(g1_sliding_min)
         G1_sliding_min_x.append(G1_sliding_min)
         dw_sliding_x.append(dw_sliding_min)
@@ -758,7 +738,7 @@ for N3 in NN3:
     print('Rate 1: FGWD is almost zero', Rate1)
     print('Rate 2: find the approx matching:', Rate2)
     print('Rate 3: the matching is exactly right', Rate3)
-    print('STD:',np.std(DFGW))
+    # print('STD:',np.std(DFGW))
     
     DFGW_set.append(DFGW)
     Percent1.append(Rate1)
@@ -767,7 +747,8 @@ for N3 in NN3:
     
     Mean.append(np.mean(DFGW))
     STD.append(np.std(DFGW))
-    
+    Time.append(np.mean(time_x))
+    print(Time)
     #create 95% confidence interval for population mean weight
     lower, upper = st.norm.interval(confidence=0.95, loc=np.mean(DFGW), scale=st.sem(DFGW))
     Lower.append(lower)
@@ -808,14 +789,23 @@ plt.xlabel('Connectivity of graphs')
 plt.ylabel('Mean and 95% confidence interval')
 # %% plot percentage
 plt.figure()
-plt.plot(np.array(NN3), np.array(Percent1),'k-x', label='exact match')
-plt.plot(np.array(NN3), np.array(Percent2),'k--.', label='approx match')
+plt.plot(np.array(NN3), np.array(Percent1),'k-x', label='FGWD almost zero <'+str(thre1))
+plt.plot(np.array(NN3), np.array(Percent2),'r--.', label='FGWD < ' +str(thre2) +'(approx match)')
+plt.plot(np.array(NN3), np.array(Percent3),'y-+', label='exact match')
 plt.grid()
+plt.legend()
 # plt.xlabel('Size of test graph')
 # plt.xlabel('Number of features')
 plt.xlabel('Connectivity of graphs')
 plt.ylabel('Success rate')
-plt.legend()
+# %% plot time
+plt.figure()
+plt.plot(np.array(NN3), np.array(Time),'k-x')
+plt.grid()
+# plt.xlabel('Size of test graph')
+# plt.xlabel('Number of features')
+# plt.xlabel('Connectivity of graphs')
+plt.ylabel('Time')
 #%% subsitute back the transport matrix
 # n1 = len(G1.nodes())
 # n2 = len(G2.nodes())
