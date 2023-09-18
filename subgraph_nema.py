@@ -714,7 +714,13 @@ for num in range(1):
         ratio = matching_count / len(edgelist)
 
     Ratio[num] = ratio
-    
+
+#%% 
+file_path_1 = "E:\Master Thesis\results\nema\Ratio.npy"
+file_path_2 = "E:\Master Thesis\results\nema\Time.npy"
+np.save(file_path_1, Ratio)
+np.save(file_path_2, Time)
+
 #%%
 print('the ratio of correct nodes', np.mean(Ratio))
 
