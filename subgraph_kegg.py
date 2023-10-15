@@ -13,7 +13,7 @@ import KEGGutils as kg
 import networkx as nx
 
 # sys.path.append(os.path.realpath('../lib'))
-sys.path.append(os.path.realpath('E:/Master Thesis/FGWD_on_Graphs_subgraph/lib_1.1'))
+sys.path.append(os.path.realpath('E:/Master Thesis/FGWD_on_Graphs_subgraph/lib2'))
 
 import numpy as np
 from graph import graph_colors,draw_rel,draw_transp,Graph,wl_labeling
@@ -29,9 +29,9 @@ import ot
 kg.delete_cached_files()
 
 # API for KEGG, "pathway type + index"
-# P1 = kg.KEGGpathway(pathway_id = "hsa05224")  # cancer
+P1 = kg.KEGGpathway(pathway_id = "hsa05224")  # cancer
 # P1 = kg.KEGGpathway(pathway_id = "hsa05010")  # Alzheimer 
-P1 = kg.KEGGpathway(pathway_id = "hsa05012")  # Parkinson
+# P1 = kg.KEGGpathway(pathway_id = "hsa05012")  # Parkinson
 # PP1 = kg.KEGGgraph(pathway_id = "D11976") # not work
 
 # print(pathway.title)
@@ -83,29 +83,29 @@ def KEGGpathwayToGraph(P):
 # G2 = copy.deepcopy(P2)
 
 #%% build a subgraph (ERK)
-# G2_nodummy = Graph()
-# G2_nodummy.add_attributes({'0':'HRAS',
-#                   '1':'ARAF',
-#                   '2':'MEK1',
-#                   '3':'ERK'})
-# G2_nodummy.add_edge(('0','1'))
-# G2_nodummy.add_edge(('1','2'))
-# G2_nodummy.add_edge(('2','3'))
-
-#%% build a subgraph (UPR): only need feature to find 
 G2_nodummy = Graph()
-G2_nodummy.add_attributes({'0':'SNCA', '1':'BIP', '2':'ATF6', '3':'IRE1a',
-                            '4':'PERK', '5':'CHOP','6':'XBP1', '7':'EIF2A',
-                            '8':'ATF4', '9':'CHOP'})
+G2_nodummy.add_attributes({'0':'HRAS',
+                  '1':'ARAF',
+                  '2':'MEK1',
+                  '3':'ERK'})
 G2_nodummy.add_edge(('0','1'))
 G2_nodummy.add_edge(('1','2'))
-G2_nodummy.add_edge(('1','3'))
-G2_nodummy.add_edge(('1','4'))
-G2_nodummy.add_edge(('2','5'))
-G2_nodummy.add_edge(('3','6'))
-G2_nodummy.add_edge(('4','7'))
-G2_nodummy.add_edge(('7','8'))
-G2_nodummy.add_edge(('8','9'))
+G2_nodummy.add_edge(('2','3'))
+
+#%% build a subgraph (UPR): only need feature to find 
+# G2_nodummy = Graph()
+# G2_nodummy.add_attributes({'0':'SNCA', '1':'BIP', '2':'ATF6', '3':'IRE1a',
+#                             '4':'PERK', '5':'CHOP','6':'XBP1', '7':'EIF2A',
+#                             '8':'ATF4', '9':'CHOP'})
+# G2_nodummy.add_edge(('0','1'))
+# G2_nodummy.add_edge(('1','2'))
+# G2_nodummy.add_edge(('1','3'))
+# G2_nodummy.add_edge(('1','4'))
+# G2_nodummy.add_edge(('2','5'))
+# G2_nodummy.add_edge(('3','6'))
+# G2_nodummy.add_edge(('4','7'))
+# G2_nodummy.add_edge(('7','8'))
+# G2_nodummy.add_edge(('8','9'))
 
 #%%
 G1=KEGGpathwayToGraph(P1)
@@ -131,7 +131,7 @@ vmin=0
 vmax=9  # the range of color
 thresh=0.004
 # FGWD
-alpha=0.2
+alpha=0.5
 dfgw,log_FGWD,transp_FGWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=alpha, features_metric=fea_metric, method= str_metric ,loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
 # fig=plt.figure()
 # plt.title('FGWD coupling')

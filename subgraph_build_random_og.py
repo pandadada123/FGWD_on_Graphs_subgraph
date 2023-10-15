@@ -6,14 +6,16 @@ Created on Wed Mar 29 09:06:16 2023
 """
 
 
-import numpy as np
-import os
-import sys
 
+import sys
+sys.modules[__name__].__dict__.clear()
+
+import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 # sys.path.append(os.path.realpath('../lib'))
 # sys.path.append(os.path.realpath(‘E:/Master Thesis/FGWD_on_Graphs_subgraph/lib_0.0'))
+import numpy as np
 
 from lib1.graph import graph_colors, draw_rel, draw_transp, Graph, wl_labeling
 import random
@@ -29,6 +31,7 @@ from lib1.ot_distances import Fused_Gromov_Wasserstein_distance
 import scipy.stats as st
 import time
 
+
 N = 5  # nodes in subgraph
 # NN =  [5,10,15,25,35,45,55]
 # NN =[10]
@@ -39,22 +42,34 @@ N = 5  # nodes in subgraph
 # NN2=[5]
 # N3 = [x+N for x in NN2]
 # NN3 = [15,20,25,35,45,55,65,75,85,95]
+# NN3 = [20,50,100,200,300,400,500]
+# NN3 = [20,50,100,500,1000,2000,3000]
+# NN3 = [50, 100, 1000, 3000, 5000, 7000, 10000]
+# NN3 = [10000]
 # N3 = N+N2
 N3 = 45
-# NN3 = [45]
-Pw = np.linspace(0.1, 1, 10)
+# NN3 = [80]
+d = 2
+deg = 10
+# Deg = [0.5,1]+[x for x in range(2, 15, 2)]
+# Pw = np.linspace(0.1, 1, 10)
+# Pw = [deg / (x-1) for x in NN3]
 # Pw = [0.5]
-# pw1 = 0.5
-# pw2 = 0.5
+# pw1 = 0.5 # query
+pw1 = d / (N-1)
+# pw2 = 0.5 # target
+# pw2 = deg/ (N3-1)
 # Sigma2=[0.01,0.1,0.5,1,2,3,4]
 # Sigma2=[0.01]
 # sigma1=0.1
 # sigma2=0.1
-numfea = 15
+# numfea = 4
 # NumFea = list(range(1, 11))  # from 1 to 20
+NumFea = [x for x in range(2, 41, 2)]
 # NumFea = [2]
 
 # Alpha = np.linspace(0, 1, 11)
+# Alpha = [0.5]
 
 thre1 = 1e-9
 # thre2=-0.015000 # entropic
@@ -81,6 +96,37 @@ mean_fea = 0
 std_fea = 0
 str_mean = 0
 str_std = 0
+
+def bootstrap_mean_confidence_interval(data, num_bootstraps=1000, alpha=0.05):
+    """
+    Calculate the 1-alpha confidence interval for the mean using bootstrap resampling.
+
+    Parameters:
+    data (numpy array or list): The dataset for which the confidence interval is to be calculated.
+    num_bootstraps (int): The number of bootstrap samples to generate.
+    alpha (float): The significance level (e.g., 0.05 for a 95% confidence interval).
+
+    Returns:
+    tuple: A tuple containing the lower and upper bounds of the confidence interval.
+    """
+    # Initialize an array to store bootstrap means
+    bootstrap_means = np.zeros(num_bootstraps)
+
+    # Perform bootstrap resampling and calculate means
+    for i in range(num_bootstraps):
+        bootstrap_sample = np.random.choice(data, size=len(data), replace=True)
+        bootstrap_means[i] = np.mean(bootstrap_sample)
+
+    # Sort the bootstrap means
+    bootstrap_means.sort()
+
+    # Calculate the lower and upper percentiles for the confidence interval
+    lower_percentile = (alpha / 2) * 100
+    upper_percentile = (1 - alpha / 2) * 100
+    lower_bound = np.percentile(bootstrap_means, lower_percentile)
+    upper_bound = np.percentile(bootstrap_means, upper_percentile)
+
+    return lower_bound, upper_bound
 
 # %% build star graph
 
@@ -191,7 +237,7 @@ STD = []
 Lower = []
 Upper = []
 
-for pw in Pw:
+for numfea in NumFea:
     num = 0
     
     yes1 = 0
@@ -246,7 +292,7 @@ for pw in Pw:
         # np.random.seed(12)
         # G11 = build_G1(G0, N=N, numfea = numfea, pw = pw1) # if set pw = 1 to build a fully-conn graph
         # if set pw = 1 to build a fully-conn graph
-        pw1=pw
+        # pw1=pw
         G11 = build_comunity_graph(N=N, numfea=numfea, pw=pw1)
 
         # %% build G1
@@ -256,7 +302,9 @@ for pw in Pw:
         # G112=build_G1(G12,N=N2,mu=1,sigma=8,pw=0.1)
         # G1 = Graph(merge_graph(G111.nx_graph,G112.nx_graph))
         N2 = N3 - N
-        pw2=pw1
+        # pw2=pw1
+        # pw2 = Pw[ NN3.index(N3) ]
+        pw2 = deg / (N3-1)
         G1 = build_G1(G12, N2=N2, numfea=numfea, pw=pw2)
 
         # check if all nodes in G1 are connected
@@ -277,6 +325,11 @@ for pw in Pw:
         if is_connected == 0:
             print("'The query graph is not connected.'")
             continue
+         
+        #%%
+        # if nx.diameter(g2_nodummy) > 2:
+        #     print("The diameter is too large")
+        #     continue
         # %%
         start_time = time.time()
         
@@ -342,7 +395,7 @@ for pw in Pw:
         if Is_fig:
             vmin = 0
             vmax = 9  # the range of color
-            fig = plt.figure(figsize=(10, 8))
+            fig = plt.figure()
             plt.title('FGWD coupling')
             draw_transp(G1, G2, transp_FGWD, shiftx=2, shifty=0.5, thresh=thresh,
                         swipy=True, swipx=False, with_labels=True, vmin=vmin, vmax=vmax)
@@ -523,13 +576,16 @@ for pw in Pw:
     Percent2.append(yes2/Num)
     Percent3.append(Rate3)
     Percent4.append(yes3/Num)
+    
+    Percent_set = [Percent1, Percent2, Percent3, Percent4]
 
     Mean.append(np.mean(DFGW))
     STD.append(np.std(DFGW))
     Time.append(np.mean(time_x))
     print(Time)
     #create 95% confidence interval for population mean weight
-    lower, upper = st.norm.interval(confidence=0.95, loc=np.mean(DFGW), scale=st.sem(DFGW))
+    # lower, upper = st.norm.interval(confidence=0.95, loc=np.mean(DFGW), scale=st.sem(DFGW))
+    lower, upper = bootstrap_mean_confidence_interval(DFGW,alpha=0.05)
     Lower.append(lower)
     Upper.append(upper)
     
@@ -539,35 +595,46 @@ for pw in Pw:
 # ax.boxplot(DFGW_set, showfliers=False, showmeans=False)
 # %% plot mean and STD
 plt.figure()
-plt.plot(np.array(Pw), np.array(Mean), 'k-+')
-# plt.fill_between(np.array(Pw), np.array(Mean)-np.array(STD), np.array(Mean)+np.array(STD), alpha=0.5) # alpha here is transparency
-plt.fill_between(np.array(Pw), np.array(Lower), np.array(Upper), facecolor = 'k',alpha=0.5) # alpha here is transparency
+plt.plot(np.array(NumFea), np.array(Mean), 'k-+')
+# plt.fill_between(np.array(Alpha), np.array(Mean)-np.array(STD), np.array(Mean)+np.array(STD), alpha=0.5) # alpha here is transparency
+plt.fill_between(np.array(NumFea), np.array(Lower), np.array(Upper), facecolor = 'k',alpha=0.5) # alpha here is transparency
 plt.grid()
-# plt.xlabel('Size of test graph')
+plt.xlabel('Size of test graph')
 # plt.xlabel('Number of features')
 # plt.xlabel('Connectivity of graphs')
+# plt.xlabel('Average node degree of test graph')
+# plt.xlabel('Alpha')
 plt.ylabel('Mean and 95% confidence interval')
+plt.ylim(0, 0.05)
+
 # %% plot percentage
 plt.figure()
-plt.plot(np.array(Pw), np.array(Percent1),'k-x', label='FGWD almost zero <'+str(thre1))
-plt.plot(np.array(Pw), np.array(Percent2),'r--.', label='FGWD < ' +str(thre2) +'(approx match)')
-plt.plot(np.array(Pw), np.array(Percent4),'b--.', label='FGWD < ' +str(thre3) +'(approx match)')
-plt.plot(np.array(Pw), np.array(Percent3),'y-+', label='exact match')
-
+plt.plot(np.array(NumFea), np.array(Percent1),'r-.x', label='nFGWD <'+str(thre1))
+# plt.plot(np.array(Alpha), np.array(Percent2),'r--.', label='FGWD < ' +str(thre2) +'(approx match)')
+plt.plot(np.array(NumFea), np.array(Percent4),'--.', color = 'tab:blue', label='nFGWD < ' +str(thre3))
+plt.plot(np.array(NumFea), np.array(Percent3),'k-+', label='exact matching')
 plt.grid()
-# plt.xlabel('Size of test graph')
+plt.xlabel('Size of test graph')
 # plt.xlabel('Number of features')
 # plt.xlabel('Connectivity of graphs')
+# plt.xlabel('Average node degree of test graph')
+# plt.xlabel('Alpha')
 plt.ylabel('Success rate')
 plt.legend()
+plt.ylim(-0.05, 1.05)
+
 # %% plot time
 plt.figure()
-plt.plot(np.array(Pw), np.array(Time),'k-x')
+plt.plot(np.array(NumFea), np.array(Time),'k-x')
 plt.grid()
-# plt.xlabel('Size of test graph')
+plt.xlabel('Size of test graph')
 # plt.xlabel('Number of features')
 # plt.xlabel('Connectivity of graphs')
-plt.ylabel('Time')
+# plt.xlabel('Average node degree of test graph')
+# plt.xlabel('Alpha')
+plt.ylabel('Time (sec)')
+plt.ylim(0, 0.01)
+
 #%% subsitute back the transport matrix
 # n1 = len(G1.nodes())
 # n2 = len(G2.nodes())
@@ -599,3 +666,15 @@ plt.ylabel('Time')
 # print(check_wloss)
 # check_fgwloss = (1-alpha)*check_wloss+alpha*check_gwloss
 # print(check_fgwloss)
+
+#%%
+# directory = "E:/Master Thesis/results/og"
+
+# file_path_1 = os.path.join(directory, "DFGW"+"_Size"+"_N"+str(N)+"_numfea="+str(numfea)+"_d="+str(d)+"_deg="+str(deg)+".npy")
+# np.save(file_path_1,DFGW_set)
+
+# file_path_3 = os.path.join(directory, "Percent"+"_Size"+"_N"+str(N)+"_numfea="+str(numfea)+"_d="+str(d)+"_deg="+str(deg)+".npy")
+# np.save(file_path_3,Percent_set)
+
+# file_path_2 = os.path.join(directory, "Time"+"_Size"+"_N"+str(N)+"_numfea="+str(numfea)+"_d="+str(d)+"_deg="+str(deg)+".npy")
+# np.save(file_path_2,Time)

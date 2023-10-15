@@ -5,12 +5,13 @@ Created on Wed Mar 29 09:06:16 2023
 @author: Pandadada
 """
 
+import sys
+sys.modules[__name__].__dict__.clear()
+
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 import numpy as np
-import os
-import sys
-
-os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 # sys.path.append(os.path.realpath('../lib'))
 # sys.path.append(os.path.realpath('E:/Master Thesis/FGWD_on_Graphs_subgraph/lib1'))
@@ -31,13 +32,14 @@ from lib1.data_loader import load_local_data,histog,build_noisy_circular_graph
 import scipy.stats as st
 import math
 
-import pickle
-
+# import pickle
+import dill as pickle
+import time 
 
 thre1 = 1e-9
 # thre2=-0.015000 # entropic
 thre2 = 1e-2
-epsilon = thre2
+epsilon = 1
         
 Is_fig = 0
 Is_info = 0
@@ -49,13 +51,13 @@ Is_check_found_subgraph = 0
 Is_check_transp = 1
 
 N = 6 # nodes in query
-Is_fea_noise = 1
+Is_fea_noise = 0
 Is_str_noise = 0
 
-mean_fea = 1 # number of nodes that has been changed
-std_fea = 1e-2 # zero mean Gaussian
-str_mean = 0
-str_std = 0.1
+mean_fea = 0 # number of nodes that has been changed
+std_fea = 0 # zero mean Gaussian
+# str_mean = 0
+# str_std = 0.1
 
 Num = 1 # number of random graphs
 # fea_metric = 'dirac'
@@ -95,6 +97,7 @@ plt.close("all")
 
 NumG = len(X) # Number of graphs
 NumQ = NumG # Number of query graphs
+# NumQ = 1
 
 #%% add noise to the query
 def add_noise_to_query(g,mean_fea,std_fea,str_mean,str_std,
@@ -167,6 +170,7 @@ yes2 = 0
 yes3 = 0
 yes4 = 0
 DFGW = np.zeros(NumQ)
+time_x= np.zeros(NumQ)
 # DIA = []
 Ratio = np.zeros(NumQ)
 missing_files_count = 0
@@ -231,7 +235,7 @@ for num in range(NumQ):
         
         # Construct the file path
         file_name = str(num) + '.pickle'
-        folder_path_1 = "E:\Master Thesis\dataset\data\BZR\query"
+        folder_path_1 = "E:\Master Thesis\dataset\data\BZR\query_noise_fea_0_0"
         file_path_1 = os.path.join(folder_path_1, file_name)
     
         # Check if the file exists
@@ -243,7 +247,7 @@ for num in range(NumQ):
         with open(file_path_1, 'rb') as file1:
                 g2_nodummy_original = pickle.load(file1)
         
-        folder_path_2 = "E:\Master Thesis\dataset\data\BZR\query_noise_0.1"
+        folder_path_2 = "E:\Master Thesis\dataset\data\BZR\query_noise_fea_"+str(mean_fea)+"_"+str(std_fea)
         file_path_2 = os.path.join(folder_path_2, file_name)
         with open(file_path_2, 'rb') as file2:
                 g2_nodummy = pickle.load(file2)
@@ -333,7 +337,10 @@ for num in range(NumQ):
         
         return longest_path_center
     
+    start_time_center = time.time()
     g2_longest_path_from_center = find_center_with_smallest_longest_hops(g2_nodummy)
+    end_time_center = time.time()
+    time_center = end_time_center - start_time_center
     
     # Using h-diameter neighborhood hops 
     def create_h_hop_subgraph(graph, center_node, h):
@@ -363,10 +370,12 @@ for num in range(NumQ):
     dw_sub = []
     
     ii=0
+    sliding_time = 0
     for center_node in g1.nodes():
         print(ii)
         ii+=1
-    
+        
+        start_time = time.time()
         # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter/2))  # sometimes could not include the subgraph in the big graph
         # induced_subgraph = create_h_hop_subgraph(g1, center_node, h=math.ceil(g2_diameter))
         g1_subgraph = create_h_hop_subgraph(g1, center_node, h = g2_longest_path_from_center)
@@ -445,12 +454,13 @@ for num in range(NumQ):
         dfgw, log_FGWD, transp_FGWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
             alpha=alpha2, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy)
         
+        end_time = time.time()
         #%% results from all sliding subgraphs
         dfgw_sub.append(dfgw)
         transp_FGWD_sub.append(transp_FGWD)
         G1_subgraph_sub.append(G1_subgraph)
         
-    
+        sliding_time += end_time - start_time
         
         # %% FGWD, find alpha
         # alld=[]
@@ -515,6 +525,10 @@ for num in range(NumQ):
     # dgfw_x_min_norm=dfgw_x_min/N # modified obj values 
     # dfgw_x_min = dfgw_x_min
     DFGW[num] = dgfw_sub_min
+    
+    time_x[num] = sliding_time + time_center
+    print("time", time_x[num])
+    
     if dgfw_sub_min < thre1:
         yes1 += 1
     if dgfw_sub_min < thre2:
@@ -687,7 +701,7 @@ for num in range(NumQ):
 
 # %% rates of all query graphs
 print('Rate 1: FGWD is almost zero', yes1/NumQ)
-print('Rate 3: find the approx matching:',yes2/NumQ)
+print('Rate 2: find the approx matching:',yes2/NumQ)
 if Is_check_found_subgraph: 
     print('Rate 3: the matching is exactly right', yes3/NumQ)
 elif Is_check_transp:
@@ -695,18 +709,25 @@ elif Is_check_transp:
     
 print('STD:',np.std(DFGW))
 # print('find the correct graph', yes4/NumQ)
-
+print('average time', np.mean(time_x))
 DFGW_set.append(DFGW)
 Percent1.append(yes1/Num)
 Percent2.append(yes2/Num)
 
-Mean.append(np.mean(DFGW))
-STD.append(np.std(DFGW))
+num_nans = np.isnan(DFGW).sum()
+print("number of nan in DFGW:", num_nans)
+mean_value = np.nanmean(DFGW)
+print("mean of dfgw:", mean_value)
+std_value = np.nanstd(DFGW)
+print("std of dfgw:", std_value)
+
+# Mean.append(np.mean(DFGW))
+# STD.append(np.std(DFGW))
 
 #create 95% confidence interval for population mean weight
-lower, upper = st.norm.interval(confidence=0.95, loc=np.mean(DFGW), scale=st.sem(DFGW))
-Lower.append(lower)
-Upper.append(upper)
+# lower, upper = st.norm.interval(confidence=0.95, loc=np.mean(DFGW), scale=st.sem(DFGW))
+# Lower.append(lower)
+# Upper.append(upper)
 
 #%% for different diameter
 # # Create empty lists for each category

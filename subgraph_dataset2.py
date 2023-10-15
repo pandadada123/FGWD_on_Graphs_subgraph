@@ -33,6 +33,7 @@ import math
 
 import pickle
 
+sys.modules[__name__].__dict__.clear()
 
 thre1 = 1e-9
 # thre2=-0.015000 # entropic

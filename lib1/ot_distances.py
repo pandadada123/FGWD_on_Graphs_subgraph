@@ -176,9 +176,10 @@ class Fused_Gromov_Wasserstein_distance():
             for i in range(n):
                 for ii in range(n):
                     try:
-                        C[i][ii]=nx.shortest_path_length(g,source=Keys[i],target=Keys[ii])
+                        C[i][ii]= nx.shortest_path_length(g,source=Keys[i],target=Keys[ii]) 
                     except: 
-                        C[i][ii]=LargeValue
+                        C[i][ii]= LargeValue
+            # C = C / np.max(C)
             return C
         
         def adj(G,Keys):
@@ -209,8 +210,15 @@ class Fused_Gromov_Wasserstein_distance():
 
         if self.method=='shortest_path':
             C1 = shortest(graph1,Keys1)
+            # norm = np.max(C1)
+            norm = n1-1
+            C1 = C1/norm
             C2 = shortest(graph2,Keys2)
-        
+            C2_nodummy = C2[0:-1,0:-1]
+            # C2_nodummy = C2_nodummy / np.max(C2_nodummy)
+            C2_nodummy = C2_nodummy / norm
+            C2[0:-1,0:-1] = C2_nodummy
+            
         elif self.method=='adj':
             # Use adjacency matrices 
             # gg1 = graph1.nx_graph

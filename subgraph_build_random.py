@@ -5,12 +5,13 @@ Created on Wed Mar 29 09:06:16 2023
 @author: Pandadada
 """
 
+import sys
+sys.modules[__name__].__dict__.clear()
+
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 import numpy as np
-import os
-import sys
-
-os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 # sys.path.append(os.path.realpath('../lib'))
 # sys.path.append(os.path.realpath('E:/Master Thesis/FGWD_on_Graphs_subgraph/lib1'))
@@ -40,24 +41,37 @@ N = 5  # nodes in query
 # NN2 =  [75,70,65,55,45,35,25]
 # NN2=[5]
 # N3 = [x+N for x in NN2]
-NN3 = [15,20,25,35,45,55,65,75,85,95]
+# NN3 = [15,20,25,35,45,55,65,75,85,95]
+# NN3 = [20,50,100,200,300,400,500]
+# NN3 = [20,50,100,500,1000,2000,3000]
+# NN3 = [50, 100, 1000, 3000, 5000, 7000, 10000]
+# NN3 = [10000]
 # NN3 = [15,20,25]
 # NN3 = [15,45,75]
 # N3 = N+N2
-N3 = 45
-# NN3 = [45]
+# N3 = 45
+NN3 = [45]
 # Pw = np.linspace(0.1, 1, 10)
 # Pw = np.linspace(0.01, 0.1, 10)
+d = 2
+# Deg = [0.5,1]+[x for x in range(2, 15, 2)]
+# deg = 10
+deg = 3
+# Pw2 = [deg / (N3-1) for deg in Deg]
 # Pw = [0.1]
-pw1 = 0.1  # query
+# pw1 = 0.5 # query
+# pw1 = d / (N-1)
 # pw1 = np.random.choice(np.linspace(0.1, 1, 10))
-pw2 = 0.05 # target
+# pw2 = 0.5 # target
+# pw1 = deg / (N-1)
+# pw2 = deg / (N3-1)
 # Sigma2=[0.01,0.1,0.5,1,2,3,4]
 # Sigma2=[0.01]
 # sigma1=0.1
 # sigma2=0.1
-numfea = 15
-# NumFea = list(range(1, 11))  # from 1 to 20
+numfea = 20
+# NumFea = list(range(1, 20))  # from 1 to 20
+# NumFea = [x for x in range(2, 41, 2)]
 # NumFea = [2]
 
 # Alpha = np.linspace(0, 1, 11)
@@ -67,7 +81,7 @@ numfea = 15
 thre1 = 1e-9
 # thre2=-0.015000 # entropic
 thre2 = 1e-2
-# thre2 = 0.05
+thre3 = 0.05
 epsilon = thre1
         
 Is_fig = 0
@@ -75,13 +89,15 @@ Is_info = 0
 Is_fea_noise = 0
 Is_str_noise = 0
 
-Num = 100 # number of repeats (generate a random graph and a query)
+Num = 1 # number of repeats (generate a random graph and a query)
 fea_metric = 'dirac'
 # fea_metric = 'hamming'
 # fea_metric = 'sqeuclidean'
 # fea_metric = 'jaccard'
 # str_metric = 'shortest_path'  # remember to change lib0 and cost matrix
 str_metric = 'adj'
+loss_fun='square_loss'
+# loss_fun = 'kl_loss'
 
 alpha1 = 0
 alpha2 = 0.5
@@ -155,9 +171,25 @@ def build_comunity_graph(N=30, numfea=3, pw=0.5, fea_metric= 'dirac'):
                     if r < pw:
                         g.add_edge((i, j))
     
-
     return g
 
+def build_line_graph(N=30, numfea=3, fea_metric= 'dirac'):
+    g = Graph()
+    g.add_nodes(list(range(N)))
+    
+    if fea_metric == 'dirac':
+        # v=mu+sigma*np.random.randn(N);
+        # v=np.int_(np.floor(v)) # discrete attributes
+        # Fea = np.linspace(0,20,numfea)
+        Fea = list(range(0, numfea))
+        for i in range(N):
+            # g.add_one_attribute(i,v[i])
+            fea = random.choice(Fea)
+            g.add_one_attribute(i, fea)
+        for i in range(N-1):
+            g.add_edge((i, i+1))
+    
+    return g
 # %% merge community graphs
 def merge_graph(g1, g2):  # inputs are nx_graph
     gprime = nx.Graph(g1)
@@ -268,6 +300,7 @@ DFGW_set = []
 Percent1 = []
 Percent2 = []
 Percent3 = []
+Percent4 = []
 Mean = []
 Time = []
 STD = []
@@ -299,9 +332,12 @@ for N3 in NN3:
         print("iter", num)
         
         # %% build G1
-        pw1=0.1
-        G11 = build_comunity_graph(N=N, numfea=numfea, pw=pw1, fea_metric=fea_metric)
-
+        # pw1=0.1
+        # G11 = build_comunity_graph(N=N, numfea=numfea, pw=pw1, fea_metric=fea_metric)
+        
+        # build line graph for query
+        G11 = build_line_graph(N=N, numfea=numfea, fea_metric=fea_metric)
+        
         # np.random.seed()  # different graph G1 every time
         G12 = copy.deepcopy(G11)  # initialize with subgraph
         # G111=build_G1(G12,N=N2,mu=1,sigma=8,pw=0.1)
@@ -309,6 +345,8 @@ for N3 in NN3:
         # G1 = Graph(merge_graph(G111.nx_graph,G112.nx_graph))
         N2 = N3 - N
         # pw2=pw
+        # pw2 = Pw2 [ NN3.index(N3) ]
+        pw2 = deg / (N3-1)
         G1 = build_G1(G12, N2=N2, numfea=numfea, pw=pw2, fea_metric=fea_metric)
 
         # %% G1 is the test graph and G2_nodummy is the query graph
@@ -482,7 +520,7 @@ for N3 in NN3:
             # epsilon = thre1
             # alpha = 0
             dw, log_WD, transp_WD, M, C1, C2  = Fused_Gromov_Wasserstein_distance(
-                alpha=alpha1, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_sliding, G2, p1, p2, p2_nodummy)
+                alpha=alpha1, features_metric=fea_metric, method=str_metric, loss_fun=loss_fun).graph_d(G1_sliding, G2, p1, p2, p2_nodummy)
             time4=time.time()
             if dw > epsilon:
                 print("filter out")
@@ -491,7 +529,7 @@ for N3 in NN3:
             # %% FGWD
             # alpha = 0.5
             dfgw, log_FGWD, transp_FGWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
-                alpha=alpha2, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_sliding, G2, p1, p2, p2_nodummy)
+                alpha=alpha2, features_metric=fea_metric, method=str_metric, loss_fun=loss_fun).graph_d(G1_sliding, G2, p1, p2, p2_nodummy)
             time6=time.time()
             end_time = time.time()
             # %% keep an record of the successful sliding subgraphs and their dw
@@ -734,6 +772,8 @@ for N3 in NN3:
     # index3 = [i for i in range(len(g2_nodummy_x)) if nx.is_isomorphic(g2_nodummy_x[i], g1_subgraph_found_x[i])]
     Rate3 = len(index3) / Num 
     # Rate3 = yes / Num
+    index4 = [index for index, value in enumerate(DFGW) if value < thre3]
+    Rate4 = len(index4) / Num
     
     print('Rate 1: FGWD is almost zero', Rate1)
     print('Rate 2: find the approx matching:', Rate2)
@@ -744,6 +784,9 @@ for N3 in NN3:
     Percent1.append(Rate1)
     Percent2.append(Rate2)
     Percent3.append(Rate3)
+    Percent4.append(Rate4)
+    
+    Percent_set = [Percent1, Percent2, Percent3, Percent4]
     
     Mean.append(np.mean(DFGW))
     STD.append(np.std(DFGW))
@@ -774,38 +817,49 @@ for N3 in NN3:
     #     Upper.append(upper)
 
 # %% boxplot
-fig, ax = plt.subplots()
-# ax.set_title('Hide Outlier Points')
-ax.boxplot(DFGW_set, showfliers=False, showmeans=False)
+# fig, ax = plt.subplots()
+# # ax.set_title('Hide Outlier Points')
+# ax.boxplot(DFGW_set, showfliers=False, showmeans=False)
 # %% plot mean and STD
 plt.figure()
-plt.plot(np.array(NN3), np.array(Mean), 'k-+')
-# plt.fill_between(np.array(NN3), np.array(Mean)-np.array(STD), np.array(Mean)+np.array(STD), alpha=0.5) # alpha here is transparency
-plt.fill_between(np.array(NN3), np.array(Lower), np.array(Upper), facecolor = 'k',alpha=0.5) # alpha here is transparency
+plt.plot(np.array(NN3), np.array(Mean), 'b-+')
+# plt.fill_between(np.array(NumFea), np.array(Mean)-np.array(STD), np.array(Mean)+np.array(STD), alpha=0.5) # alpha here is transparency
+plt.fill_between(np.array(NN3), np.array(Lower), np.array(Upper), facecolor = 'b',alpha=0.5) # NumFea here is transparency
 plt.grid()
-# plt.xlabel('Size of test graph')
-# plt.xlabel('Number of features')
-plt.xlabel('Connectivity of graphs')
-plt.ylabel('Mean and 95% confidence interval')
-# %% plot percentage
-plt.figure()
-plt.plot(np.array(NN3), np.array(Percent1),'k-x', label='FGWD almost zero <'+str(thre1))
-plt.plot(np.array(NN3), np.array(Percent2),'r--.', label='FGWD < ' +str(thre2) +'(approx match)')
-plt.plot(np.array(NN3), np.array(Percent3),'y-+', label='exact match')
-plt.grid()
-plt.legend()
-# plt.xlabel('Size of test graph')
-# plt.xlabel('Number of features')
-plt.xlabel('Connectivity of graphs')
-plt.ylabel('Success rate')
-# %% plot time
-plt.figure()
-plt.plot(np.array(NN3), np.array(Time),'k-x')
-plt.grid()
-# plt.xlabel('Size of test graph')
+plt.xlabel('Size of test graph')
 # plt.xlabel('Number of features')
 # plt.xlabel('Connectivity of graphs')
-plt.ylabel('Time')
+# plt.xlabel('Average node NN3ree of test graph')
+# plt.xlabel('Alpha')
+plt.ylabel('Mean and 95% confidence interval')
+# plt.ylim(0, 0.05)
+# %% plot percentage
+plt.figure()
+plt.plot(np.array(NN3), np.array(Percent1),'-x', color = 'tab:green', label='m='+str(N)+', nFGWD <'+str(thre1))
+# plt.plot(np.array(NumFea), np.array(Percent2),'r--.', label='FGWD < ' +str(thre2) +'(approx match)')
+plt.plot(np.array(NN3), np.array(Percent4),'--.', color = 'tab:orange', label='m='+str(N)+', nFGWD < ' +str(thre3) )
+plt.plot(np.array(NN3), np.array(Percent3),'-+', color = 'b', label='exact matching')
+plt.grid()
+plt.legend()
+plt.xlabel('Size of test graph')
+# plt.xlabel('Number of features')
+# plt.xlabel('Connectivity of graphs')
+# plt.xlabel('Average node NN3ree of test graph')
+# plt.xlabel('Alpha')
+plt.ylabel('Success rate')
+# plt.ylim(-0.05, 1.05)
+
+# %% plot time
+plt.figure()
+plt.plot(np.array(NN3), np.array(Time),'b-+')
+plt.grid()
+plt.xlabel('Size of test graph')
+# plt.xlabel('Number of features')
+# plt.xlabel('Connectivity of graphs')
+# plt.xlabel('Average node degree of test graph')
+# plt.xlabel('Alpha')
+plt.ylabel('Time (sec)')
+# plt.ylim(0, 0.03)
 #%% subsitute back the transport matrix
 # n1 = len(G1.nodes())
 # n2 = len(G2.nodes())

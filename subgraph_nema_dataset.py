@@ -42,6 +42,8 @@ from IPython.core.display import SVG
 ROOT_DIR = os.path.abspath("../../")
 sys.path.append(ROOT_DIR)
 
+from sqlalchemy import text
+
 
 # To install the use the dependencies for this notebook:
 # 
@@ -172,6 +174,10 @@ NumQ = NumG
 
 Is_create_query = 0
 
+mean_fea = 0 # number of nodes that has been changed
+std_fea = 0 # zero mean Gaussian
+# str_mean = 0
+# str_std = 0.1
 # Generate a random string of given length
 def random_string(length):
     letters = string.ascii_lowercase
@@ -182,12 +188,18 @@ def random_string(length):
 # target_labels = query_labels + [random.choice(query_labels) for _ in range(100-5)]
 # target_labels = ['guardians', 'groot', 'star', 'guardians2']
 
+Eps = 1
+
 missing_files_count = 0
 Cost =np.zeros(NumQ)
 Ratio = np.zeros(NumQ)
-Time = np.zeros(NumQ)
+Time_execute = np.zeros(NumQ)
+Time_match = np.zeros(NumQ)
+Time_opt = np.zeros(NumQ)
+Time_total = np.zeros(NumQ)
+Time_total_2 = np.zeros(NumQ)
 
-for num in range(1):
+for num in range(NumQ):
     print("num=",num)
     #%%
     if Is_create_query:
@@ -259,7 +271,7 @@ for num in range(1):
         # clean
         # Construct the file path
         file_name = str(num) + '.pickle'
-        folder_path_1 = "E:\Master Thesis\dataset\data\BZR\query"
+        folder_path_1 = "E:\Master Thesis\dataset\data\BZR\query_noise_fea_0_0"
         file_path_1 = os.path.join(folder_path_1, file_name)
     
         # Check if the file exists
@@ -280,7 +292,7 @@ for num in range(1):
         query_edges_original = list(g2_nodummy_original.edges())
         
         # noisy
-        folder_path_2 = "E:\Master Thesis\dataset\data\BZR\query_noise_0.1"
+        folder_path_2 = "E:\Master Thesis\dataset\data\BZR\query_noise_fea_"+str(mean_fea)+"_"+str(std_fea)
         file_path_2 = os.path.join(folder_path_2, file_name)
         with open(file_path_2, 'rb') as file2:
                 g2_nodummy = pickle.load(file2)
@@ -431,7 +443,7 @@ for num in range(1):
         
     # In[7]:
     # def search(query_id: int, query_label: str):
-    def search(query_id, query_label):
+    def search(query_id, query_label, Eps):
         # compute all of the scores
         scores = nodes_df['target_label'].apply(
             node_scoring_function, 
@@ -443,8 +455,9 @@ for num in range(1):
         scores = scores.replace(0, small_value)
         
         # create a boolean mask
-        epsilon = 1e-1 # for noisy query
+        # epsilon = 1e-1 # for noisy query
         # epsilon = 1e-9 # for clean query
+        epsilon = Eps
         mask = scores > 1-epsilon
         # mask = scores > 0
         
@@ -477,14 +490,19 @@ for num in range(1):
     
     
     # find the nodes similar to 'guardians', 'star' and 'groot'
-    matches = pd.concat(search(id_, label) for id_, label in enumerate(query_labels))
+    start_match = time.time()
+    matches = pd.concat(search(id_, label, Eps) for id_, label in enumerate(query_labels))
+    end_match = time.time()
     matches
+    Time_match[num]=end_match - start_match
+    print("TimeMatch",Time_match[num])
     
-    unique_count = matches['query_id'].nunique()
-    if unique_count < N:
-        print("no enough nodes in the candidate set")
-        Ratio[num]=np.nan
-        continue
+    # unique_count = matches['query_id'].nunique() # no need to add this
+    # if unique_count < N:
+    #     print("no enough nodes in the candidate set")
+    #     Ratio[num]=np.nan
+    #     Time[num]=np.nan
+    #     continue
 
     
     # Fornax enables a more powerful type of search. 
@@ -506,7 +524,7 @@ for num in range(1):
     # In[10]:
     
     
-    with fornax.Connection('sqlite:///mydb.sqlite') as conn:
+    with fornax.Connection('sqlite:///mydb1.sqlite') as conn:
         target_graph = fornax.GraphHandle.create(conn)
         target_graph.add_nodes(
             # use id_src to set a custom id on each node 
@@ -526,7 +544,7 @@ for num in range(1):
     # In[11]:
     
     
-    with fornax.Connection('sqlite:///mydb.sqlite') as conn:
+    with fornax.Connection('sqlite:///mydb1.sqlite') as conn:
         target_graph.graph_id
         another_target_graph_handle = fornax.GraphHandle.read(conn, target_graph.graph_id)
         print(another_target_graph_handle == target_graph)
@@ -541,7 +559,7 @@ for num in range(1):
     # In[12]:
     
     
-    with fornax.Connection('sqlite:///mydb.sqlite') as conn:
+    with fornax.Connection('sqlite:///mydb1.sqlite') as conn:
         # create a new graph
         query_graph = fornax.GraphHandle.create(conn)
     
@@ -590,7 +608,7 @@ for num in range(1):
     # In[13]:
     
     
-    with fornax.Connection('sqlite:///mydb.sqlite') as conn:
+    with fornax.Connection('sqlite:///mydb1.sqlite') as conn:
         query = fornax.QueryHandle.create(conn, query_graph, target_graph)
         query.add_matches(matches['query_id'], matches['target_id'], matches['score'])
         
@@ -603,12 +621,12 @@ for num in range(1):
     # In[14]:
     
     
-    with fornax.Connection('sqlite:///mydb.sqlite') as conn:
-        # get_ipython().run_line_magic('time', 'results = query.execute(n=5)')
+    with fornax.Connection('sqlite:///mydb1.sqlite') as conn:
+        
         start_time = time.time()
         results = query.execute(n=1, hopping_distance=1)  # top-n results
         end_time = time.time()
-        Time[num] = end_time - start_time
+        Time_execute[num] = end_time - start_time
         
     # ## Visualise
     # 
@@ -646,44 +664,47 @@ for num in range(1):
     # However, we can see that our query graph is really similar to Groot and Star-Lord from Guardians of the Galaxy.
     # Since this is the best match we know that 
     
-    # In[16]:
+    # # In[16]:
     
     
-    # for i, graph in enumerate(results['graphs'][:1]):
-    #     plt.title('Result {0}, score: {1:.2f}'.format(1, 1. - graph['cost']))
-    #     draw(graph)
-    #     plt.xlim(-1.2,1.2)
-    #     plt.ylim(-1.2,1.2)
-    #     plt.axis('off')
-    #     plt.show()
+    for i, graph in enumerate(results['graphs'][:1]):
+        # plt.title('Result {0}, score: {1:.2f}'.format(1, 1. - graph['cost']))
+        plt.title('Result {0}, score: {1:.2f}'.format(1, graph['cost']))
+        draw(graph)
+        plt.xlim(-1.2,1.2)
+        plt.ylim(-1.2,1.2)
+        plt.axis('off')
+        plt.show()
     
     
-    # # Results 2-4 have a lower score because `star` matches to a different node not adjacent to Guardians of the Galaxy. Further inspection would show that `star` has matched aliases of Star-Lord which are near Guardians of the Galaxy but not ajacent to it.
+    # Results 2-4 have a lower score because `star` matches to a different node not adjacent to Guardians of the Galaxy. Further inspection would show that `star` has matched aliases of Star-Lord which are near Guardians of the Galaxy but not ajacent to it.
     
-    # # In[17]:
-    
-    
-    # for i, graph in enumerate(results['graphs'][1:4]):
-    #     plt.title('Result {0}, score: {1:.2f}'.format(i+2, 1. - graph['cost']))
-    #     draw(graph)
-    #     plt.xlim(-1.2,1.2)
-    #     plt.ylim(-1.2,1.2)
-    #     plt.axis('off')
-    #     plt.show()
+    # In[17]:
     
     
-    # # The final match pairs `guardians` and `star` to two nodes that do not have similar edges to the target graph. `groot` is not found in the target graph. The result gets a much lower score than the preceding results and we can be sure that any additional results will also be poor because the result are ordered.
+    for i, graph in enumerate(results['graphs'][1:4]):
+        # plt.title('Result {0}, score: {1:.2f}'.format(i+2, 1. - graph['cost']))
+        plt.title('Result {0}, score: {1:.2f}'.format(i+2, graph['cost']))
+        draw(graph)
+        plt.xlim(-1.2,1.2)
+        plt.ylim(-1.2,1.2)
+        plt.axis('off')
+        plt.show()
     
-    # # In[18]:
+    
+    # The final match pairs `guardians` and `star` to two nodes that do not have similar edges to the target graph. `groot` is not found in the target graph. The result gets a much lower score than the preceding results and we can be sure that any additional results will also be poor because the result are ordered.
+    
+    # In[18]:
     
     
-    # for i, graph in enumerate(results['graphs'][4:]):
-    #     plt.title('Result {0}, score: {1:.2f}'.format(i+5, 1. - graph['cost']))
-    #     draw(graph)
-    #     plt.xlim(-1.2,1.2)
-    #     plt.ylim(-1.2,1.2)
-    #     plt.axis('off')
-    #     plt.show()
+    for i, graph in enumerate(results['graphs'][4:]):
+        # plt.title('Result {0}, score: {1:.2f}'.format(i+5, 1. - graph['cost']))
+        plt.title('Result {0}, score: {1:.2f}'.format(i+5, graph['cost']))
+        draw(graph)
+        plt.xlim(-1.2,1.2)
+        plt.ylim(-1.2,1.2)
+        plt.axis('off')
+        plt.show()
     
     #%%
     for i, graph in enumerate(results['graphs'][:1]):        
@@ -710,26 +731,69 @@ for num in range(1):
         
         # Print the count of matching elements
         print("Number of matching elements between list_B and query_labels_original_reorder:", matching_count)
-        #%%
+        #%% Ratio of nodes that are matched
         ratio = matching_count / len(edgelist)
-
+        
+    #%%
     Ratio[num] = ratio
-
+    Time_opt[num] = results['time']
+    
+    print('ratio', Ratio[num])
+    print('time_execute', Time_execute[num])
+    print('time_match', Time_match[num])
+    
+    print('cost', Cost[num])
+    
+    Time_total[num] = Time_execute[num] + Time_match[num]
+    Time_total_2[num] = results['time_total'] + Time_match[num]
+    print('time_total', Time_total[num])
+    print('time_total_2', Time_total_2[num])
+    
+    with fornax.Connection('sqlite:///mydb1.sqlite') as conn:  # introduce connection first 
+        # cursor = conn.cursor()
+        
+        # cursor.execute('DELETE FROM graphs')
+        query.delete()
+        target_graph.delete()
+        query_graph.delete()
+        # fornax.conn.close()    
+        # conn.commit()
+        sql_statement = text(f'DELETE FROM match;')
+        conn.session.execute(sql_statement)
+        conn.session.commit()
+        
+        conn.close()
+    
 #%% 
-file_path_1 = "E:\Master Thesis\results\nema\Ratio.npy"
-file_path_2 = "E:\Master Thesis\results\nema\Time.npy"
-np.save(file_path_1, Ratio)
-np.save(file_path_2, Time)
+# file_path_1 = "E:/Master Thesis/results/nema/Ratio.npy"
+# file_path_2 = "E:/Master Thesis/results/nema/Time.npy"
+# np.save(file_path_1, Ratio)
+# np.save(file_path_2, Time)
+
+# directory = "E:/Master Thesis/results/nema/local"
+# file_path_1 = os.path.join(directory, "Ratio_noise_0.1_eps_"+str(Eps)+".npy")
+# file_path_2 = os.path.join(directory, "Time_noise_0.1_eps_"+str(Eps)+".npy")
+# file_path_3 = os.path.join(directory, "TimeMatch_noise_0.1_eps_"+str(Eps)+".npy")
+# os.makedirs(directory, exist_ok=True)
+
+# np.save(file_path_1, Ratio)
+# np.save(file_path_2, Time)
+# np.save(file_path_3, Time_match)
 
 #%%
 print('the ratio of correct nodes', np.mean(Ratio))
+print('Time_execute', np.mean(Time_execute))
+print('Time_match', np.mean(Time_match))
+
+print('Time_opt', np.mean(Time_opt))
+print('Time_total', np.mean(Time_total))
+print('Time_total_new', np.mean(Time_total_2))
+
+print('cost_mean', np.mean(Cost / N))
+print('cost_std', np.std(Cost / N))
 
     #%%
-    # with fornax.Connection('sqlite:///mydb.sqlite') as conn:  # introduce connection first 
-    #     # query.delete()
-    #     # target_graph.delete()
-    #     # query_graph.delete()
-    #     fornax.cnn.close()
+    
         
         # # Create a cursor object to execute SQL statements
         # cursor = conn.cursor()
