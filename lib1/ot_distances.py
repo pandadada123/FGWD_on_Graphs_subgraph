@@ -122,11 +122,11 @@ class Fused_Gromov_Wasserstein_distance():
         except IndexError:
             return x.reshape(-1,1)
 
-    def calc_fgw(self,M,C1,C2,C2_nodummy,t1masses,t2masses,p2_nodummy):
-        transpwgw,log= fgw.fgw_lp((1-self.alpha)*M,C1,C2,C2_nodummy,t1masses,t2masses,p2_nodummy,self.loss_fun,G0=None,alpha=self.alpha,verbose=self.verbose,amijo=self.amijo,log=True)      
+    def calc_fgw(self,M,C1,C2,C2_nodummy,t1masses,t2masses,p2_nodummy,stopThr):
+        transpwgw,log= fgw.fgw_lp((1-self.alpha)*M,C1,C2,C2_nodummy,t1masses,t2masses,p2_nodummy,self.loss_fun,G0=None,stopThr=stopThr,alpha=self.alpha,verbose=self.verbose,amijo=self.amijo,log=True)      
         return transpwgw,log
         
-    def graph_d(self,graph1,graph2,t1masses,t2masses,p2_nodummy):
+    def graph_d(self,graph1,graph2,t1masses,t2masses,p2_nodummy,stopThr):
         """ Compute the Fused Gromov-Wasserstein distance between two graphs. Uniform weights are used.        
         Parameters
         ----------
@@ -343,7 +343,7 @@ class Fused_Gromov_Wasserstein_distance():
         M[:,-1] = 0 # set the last col to be 0
 
         startdist=time.time()
-        transpwgw,log=self.calc_fgw(M,C1,C2,C2_nodummy,t1masses,t2masses,p2_nodummy) #return the transport matrix and FGWD value
+        transpwgw,log=self.calc_fgw(M,C1,C2,C2_nodummy,t1masses,t2masses,p2_nodummy,stopThr=stopThr) #return the transport matrix and FGWD value
         enddist=time.time()
 
         enddist=time.time()

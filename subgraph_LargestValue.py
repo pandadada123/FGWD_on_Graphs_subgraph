@@ -38,6 +38,19 @@ G11.add_edge((0,0))
 G11.add_edge((1,1))
 G11.add_edge((2,2))
 
+# G11=Graph() # community 1
+# G11.add_attributes({0:1,1:7,2:5,3:3,4:9})    # add color to nodes
+# G11.add_edge((0,1))
+# G11.add_edge((0,2))
+# G11.add_edge((0,3))
+# G11.add_edge((0,4))
+# G11.add_edge((1,2))
+# G11.add_edge((1,3))
+# G11.add_edge((1,4))
+# G11.add_edge((2,3))
+# G11.add_edge((2,4))
+# G11.add_edge((3,4))
+
 
 G12=Graph() # community 2
 G12.add_attributes({0:2,1:4})

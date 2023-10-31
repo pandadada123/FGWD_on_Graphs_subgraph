@@ -45,12 +45,13 @@ N = 5  # nodes in query
 # NN3 = [20,50,100,200,300,400,500]
 # NN3 = [20,50,100,500,1000,2000,3000]
 # NN3 = [50, 100, 1000, 3000, 5000, 7000, 10000]
-# NN3 = [10000]
+NN3 = [100, 1000, 3000, 5000, 7000, 10000]
+# # NN3 = [10000]
 # NN3 = [15,20,25]
 # NN3 = [15,45,75]
 # N3 = N+N2
 # N3 = 45
-NN3 = [45]
+# NN3 = [45]
 # Pw = np.linspace(0.1, 1, 10)
 # Pw = np.linspace(0.01, 0.1, 10)
 d = 2
@@ -60,7 +61,7 @@ deg = 3
 # Pw2 = [deg / (N3-1) for deg in Deg]
 # Pw = [0.1]
 # pw1 = 0.5 # query
-# pw1 = d / (N-1)
+pw1 = d / (N-1)
 # pw1 = np.random.choice(np.linspace(0.1, 1, 10))
 # pw2 = 0.5 # target
 # pw1 = deg / (N-1)
@@ -69,7 +70,7 @@ deg = 3
 # Sigma2=[0.01]
 # sigma1=0.1
 # sigma2=0.1
-numfea = 20
+numfea = 100
 # NumFea = list(range(1, 20))  # from 1 to 20
 # NumFea = [x for x in range(2, 41, 2)]
 # NumFea = [2]
@@ -77,6 +78,8 @@ numfea = 20
 # Alpha = np.linspace(0, 1, 11)
 
 # Dia = [i for i in range(1, N)]
+
+stopThr = 1e-9
 
 thre1 = 1e-9
 # thre2=-0.015000 # entropic
@@ -107,15 +110,37 @@ std_fea = 0
 str_mean = 0
 str_std = 0
 
-# %% build star graph
-def build_star_graph():
-    g = Graph()
-    g.add_attributes({0: 0, 1: 3, 2: 5, 3: 7})    # add color to nodes
-    g.add_edge((0, 1))
-    g.add_edge((1, 2))
-    g.add_edge((1, 3))
+#%% bootstrap 
+def bootstrap_mean_confidence_interval(data, num_bootstraps=1000, alpha=0.05):
+    """
+    Calculate the 1-alpha confidence interval for the mean using bootstrap resampling.
 
-    return g
+    Parameters:
+    data (numpy array or list): The dataset for which the confidence interval is to be calculated.
+    num_bootstraps (int): The number of bootstrap samples to generate.
+    alpha (float): The significance level (e.g., 0.05 for a 95% confidence interval).
+
+    Returns:
+    tuple: A tuple containing the lower and upper bounds of the confidence interval.
+    """
+    # Initialize an array to store bootstrap means
+    bootstrap_means = np.zeros(num_bootstraps)
+
+    # Perform bootstrap resampling and calculate means
+    for i in range(num_bootstraps):
+        bootstrap_sample = np.random.choice(data, size=len(data), replace=True)
+        bootstrap_means[i] = np.mean(bootstrap_sample)
+
+    # Sort the bootstrap means
+    bootstrap_means.sort()
+
+    # Calculate the lower and upper percentiles for the confidence interval
+    lower_percentile = (alpha / 2) * 100
+    upper_percentile = (1 - alpha / 2) * 100
+    lower_bound = np.percentile(bootstrap_means, lower_percentile)
+    upper_bound = np.percentile(bootstrap_means, upper_percentile)
+
+    return lower_bound, upper_bound
 
 # %% build fully connected graph
 def build_fully_graph(N=30, numfea=3):
@@ -173,6 +198,7 @@ def build_comunity_graph(N=30, numfea=3, pw=0.5, fea_metric= 'dirac'):
     
     return g
 
+#%%
 def build_line_graph(N=30, numfea=3, fea_metric= 'dirac'):
     g = Graph()
     g.add_nodes(list(range(N)))
@@ -190,6 +216,7 @@ def build_line_graph(N=30, numfea=3, fea_metric= 'dirac'):
             g.add_edge((i, i+1))
     
     return g
+
 # %% merge community graphs
 def merge_graph(g1, g2):  # inputs are nx_graph
     gprime = nx.Graph(g1)
@@ -238,62 +265,6 @@ def build_G1(G, N2=30, numfea=3, pw=0.5, fea_metric= 'dirac'):
                     G.add_edge((i, j))
 
     return G
-
-#%% add noise to the query
-def add_noise_to_query(g,fea_metric,
-                       mean_fea,std_fea,str_mean,str_std,
-                       Is_fea_noise,Is_str_noise):    
-    if Is_fea_noise: # Add label noise
-        if fea_metric == 'jaccard':
-            for node in g.nodes():
-                current_string = g.nodes[node]['attr_name']
-                # Convert the input string to a list of Unicode code points
-                code_points = [ord(char) for char in current_string]
-            
-                # Apply Gaussian noise to each code point
-                noisy_code_points = [
-                    int(round(code + np.random.normal(mean_fea, std_fea)))
-                    for code in code_points
-                ]
-            
-                # Ensure that code points are within valid Unicode range (32 to 126)
-                noisy_code_points = [
-                    min(max(code, 32), 126)
-                    for code in noisy_code_points
-                ]
-            
-                # Convert the noisy code points back to a string
-                noisy_string = ''.join([chr(code) for code in noisy_code_points])
-                
-                g.nodes[node]['attr_name'] = noisy_string
-
-        elif fea_metric == 'dirac' or fea_metric == 'sqeuclidean':
-            for node in g.nodes():
-                current_value = g.nodes[node]['attr_name']
-                noise = np.random.normal(mean_fea, std_fea)
-                new_value = current_value + noise
-                g.nodes[node]['attr_name'] = round(new_value)  # still int value
-            
-    if Is_str_noise: # Add structural noise
-        # Generate random values for edge insertions and deletions
-        num_insertions = max(0, int(np.random.normal(str_mean/2, str_std)))
-        num_deletions = max(0, int(np.random.normal(str_mean/2, str_std)))
-        
-        # Structural noise: Edge insertions
-        for _ in range(num_insertions):
-            node1, node2 = random.sample(g.nodes(), 2)
-            if not g.has_edge(node1, node2):
-                g.add_edge(node1, node2)
-        
-        # Structural noise: Edge deletions
-        for _ in range(num_deletions):
-            edges = list(g.edges())
-            if edges:
-                edge_to_delete = random.choice(edges)
-                g.remove_edge(*edge_to_delete)
-                
-    return g
-
     
 # %%
 DFGW_set = []
@@ -331,13 +302,16 @@ for N3 in NN3:
         
         print("iter", num)
         
-        # %% build G1
+        # %% build a random subgraoh
+
         # pw1=0.1
-        # G11 = build_comunity_graph(N=N, numfea=numfea, pw=pw1, fea_metric=fea_metric)
+        G11 = build_comunity_graph(N=N, numfea=numfea, pw=pw1, fea_metric=fea_metric)
         
         # build line graph for query
-        G11 = build_line_graph(N=N, numfea=numfea, fea_metric=fea_metric)
+        # G11 = build_line_graph(N=N, numfea=numfea, fea_metric=fea_metric)
         
+        # %% build G1
+
         # np.random.seed()  # different graph G1 every time
         G12 = copy.deepcopy(G11)  # initialize with subgraph
         # G111=build_G1(G12,N=N2,mu=1,sigma=8,pw=0.1)
@@ -355,13 +329,6 @@ for N3 in NN3:
         
         g1 = G1.nx_graph
         g2_nodummy = G2_nodummy.nx_graph
-        
-        #%% add noise to query
-        if Is_fea_noise or Is_str_noise:
-            g2_nodummy = add_noise_to_query(g2_nodummy, fea_metric=fea_metric, mean_fea = mean_fea, std_fea = std_fea, str_mean= str_mean, str_std= str_std,
-                                   Is_fea_noise=Is_fea_noise, Is_str_noise=Is_str_noise)            
-        
-        G2_nodummy = Graph(g2_nodummy)
         
         #%% only allow the query is connected
         is_connected = nx.is_connected(g2_nodummy)
@@ -520,18 +487,21 @@ for N3 in NN3:
             # epsilon = thre1
             # alpha = 0
             dw, log_WD, transp_WD, M, C1, C2  = Fused_Gromov_Wasserstein_distance(
-                alpha=alpha1, features_metric=fea_metric, method=str_metric, loss_fun=loss_fun).graph_d(G1_sliding, G2, p1, p2, p2_nodummy)
+                alpha=alpha1, features_metric=fea_metric, method=str_metric, loss_fun=loss_fun).graph_d(G1_sliding, G2, p1, p2, p2_nodummy, stopThr=stopThr)
             time4=time.time()
+            
             if dw > epsilon:
                 print("filter out")
                 continue # go to the next sliding subgraph
             time5=time.time()
+            
             # %% FGWD
             # alpha = 0.5
             dfgw, log_FGWD, transp_FGWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
-                alpha=alpha2, features_metric=fea_metric, method=str_metric, loss_fun=loss_fun).graph_d(G1_sliding, G2, p1, p2, p2_nodummy)
+                alpha=alpha2, features_metric=fea_metric, method=str_metric, loss_fun=loss_fun).graph_d(G1_sliding, G2, p1, p2, p2_nodummy, stopThr=stopThr)
             time6=time.time()
             end_time = time.time()
+            
             # %% keep an record of the successful sliding subgraphs and their dw
             dw_sliding_list.append(dw)
             
@@ -661,59 +631,8 @@ for N3 in NN3:
                 print(Fea1)
                 print("Features of the query graph:")
                 print(Fea2)
-                
-            # structure (create adj matrix in ascending order)
-            # print("Neighbours of source subgraph:")
-            # Structure_keys = list(h1._node.keys())
-            # Structure_source = list(h1._adj.values())
-            # Structure_source2 = {}  # the subgraph within the large graph, but with irrelevant nodes
-            # for source in index[:, 0]:
-            #     Structure_source2[Structure_keys[source]
-            #                       ] = Structure_source[source]
-
-            # temp_keys = list(Structure_source2.keys())
-            # for key in temp_keys:
-            #     for k in Structure_source2[key].copy():
-            #         if k not in temp_keys:
-            #             # delete the irrelevant nodes
-            #             Structure_source2[key].pop(k, None)
-            #     print(Structure_source2[key])
-
-            # print("Neighbours of query graph:")
-            # Structure_target = list(g2_nodummy._adj.values())
-            # for target in index[:, 1]:
-            #     print(Structure_target[target])
-
-
-            # # Adj matrix
-            # def generate_adjacency_matrix(graph_dict):
-            #     # Get all unique nodes from the dictionary keys
-            #     nodes = list(graph_dict.keys())
-            #     num_nodes = len(nodes)
-
-            #     # Initialize an empty adjacency matrix with zeros
-            #     adjacency_matrix = [[0] * num_nodes for _ in range(num_nodes)]
-
-            #     # Iterate over the graph dictionary
-            #     for node, connections in graph_dict.items():
-            #         # Get the index of the current node
-            #         node_index = nodes.index(node)
-
-            #         # Iterate over the connected nodes
-            #         for connected_node in connections.keys():
-            #             # Get the index of the connected node
-            #             connected_node_index = nodes.index(connected_node)
-
-            #             # Set the corresponding entry in the adjacency matrix to 1
-            #             adjacency_matrix[node_index][connected_node_index] = 1
-
-            #     return adjacency_matrix
-
-            # adjacency_subgraph = generate_adjacency_matrix(Structure_source2)
-            # adjacency_query = generate_adjacency_matrix(g2_nodummy._adj)
-            
-            
-                
+                           
+              
             # structure
             A1 = nx.to_numpy_array(h1, nodelist=Keys1)
             A2 = nx.to_numpy_array(h2, nodelist=Keys2)
@@ -745,8 +664,6 @@ for N3 in NN3:
             index3.append(0)
 
         # %% keep a record of this iter
-        # dgfw_min_norm = dgfw_sliding_min / N # modified obj values 
-        # dgfw_min_norm = dgfw_sliding_min
         
         DFGW[num] = dgfw_sliding_min # final results of this iter (2 random graphs)
         time_x[num] = sliding_time + time_center
@@ -784,7 +701,7 @@ for N3 in NN3:
     Percent1.append(Rate1)
     Percent2.append(Rate2)
     Percent3.append(Rate3)
-    Percent4.append(Rate4)
+    Percent4.append(Rate4) # thre3-Percent4
     
     Percent_set = [Percent1, Percent2, Percent3, Percent4]
     
@@ -793,7 +710,8 @@ for N3 in NN3:
     Time.append(np.mean(time_x))
     print(Time)
     #create 95% confidence interval for population mean weight
-    lower, upper = st.norm.interval(confidence=0.95, loc=np.mean(DFGW), scale=st.sem(DFGW))
+    # lower, upper = st.norm.interval(confidence=0.95, loc=np.mean(DFGW), scale=st.sem(DFGW))
+    lower, upper = bootstrap_mean_confidence_interval(DFGW,alpha=0.05)
     Lower.append(lower)
     Upper.append(upper)
     
@@ -833,6 +751,7 @@ plt.xlabel('Size of test graph')
 # plt.xlabel('Alpha')
 plt.ylabel('Mean and 95% confidence interval')
 # plt.ylim(0, 0.05)
+
 # %% plot percentage
 plt.figure()
 plt.plot(np.array(NN3), np.array(Percent1),'-x', color = 'tab:green', label='m='+str(N)+', nFGWD <'+str(thre1))
@@ -875,6 +794,7 @@ plt.ylabel('Time (sec)')
 # print(check_wloss)
 # check_fgwloss = (1-alpha)*check_wloss+alpha*check_gwloss
 # print(check_fgwloss)
+
 # %% subsitute back the transport matrix
 # n1 = len(G1.nodes())
 # n2 = len(G2.nodes())

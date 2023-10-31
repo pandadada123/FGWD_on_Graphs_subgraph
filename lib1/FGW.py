@@ -230,7 +230,7 @@ def gwggrad(constC,hC1,hC2,T):
     return 2*tens
     # return 2*tens+ 0.01 * (  np.log(T)+np.ones(np.shape(T))  )
 
-def fgw_lp(M,C1,C2,C2_nodummy,p,q,q_nodummy,loss_fun='square_loss',alpha=1,amijo=True,G0=None,**kwargs): 
+def fgw_lp(M,C1,C2,C2_nodummy,p,q,q_nodummy,loss_fun='square_loss',alpha=1,amijo=True,G0=None,stopThr=1e-09,**kwargs): 
     """
     Computes the FGW distance between two graphs see [3]
     .. math::
@@ -359,5 +359,5 @@ def fgw_lp(M,C1,C2,C2_nodummy,p,q,q_nodummy,loss_fun='square_loss',alpha=1,amijo
     
     # return optim.cg(p,q,M,alpha,f,df,G0,amijo=amijo,C1=C1,C2=C2,constC=constC,**kwargs) # for GWD, alpha = reg=1, M=0
     # constC is not used in optim process
-    return optim.cg(p,q,M,alpha,f,df,G0,amijo=amijo,C1=C1,C2=C2,constC=None,**kwargs) # for GWD, alpha = reg=1, M=0 
+    return optim.cg(p,q,M,alpha,f,df,G0,stopThr=stopThr,amijo=amijo,C1=C1,C2=C2,constC=None,**kwargs) # for GWD, alpha = reg=1, M=0 
      

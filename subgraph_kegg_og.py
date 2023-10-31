@@ -29,8 +29,8 @@ import ot
 kg.delete_cached_files()
 
 # API for KEGG, "pathway type + index"
-P1 = kg.KEGGpathway(pathway_id = "hsa05224")  # cancer
-# P1 = kg.KEGGpathway(pathway_id = "hsa05010")  # Alzheimer 
+# P1 = kg.KEGGpathway(pathway_id = "hsa05224")  # cancer
+P1 = kg.KEGGpathway(pathway_id = "hsa05010")  # Alzheimer 
 # P1 = kg.KEGGpathway(pathway_id = "hsa05012")  # Parkinson
 # PP1 = kg.KEGGgraph(pathway_id = "D11976") # not work
 
@@ -83,29 +83,29 @@ def KEGGpathwayToGraph(P):
 # G2 = copy.deepcopy(P2)
 
 #%% build a subgraph (ERK)
-G2_nodummy = Graph()
-G2_nodummy.add_attributes({'0':'HRAS',
-                  '1':'ARAF',
-                  '2':'MEK1',
-                  '3':'ERK'})
-G2_nodummy.add_edge(('0','1'))
-G2_nodummy.add_edge(('1','2'))
-G2_nodummy.add_edge(('2','3'))
-
-#%% build a subgraph (UPR): only need feature to find 
 # G2_nodummy = Graph()
-# G2_nodummy.add_attributes({'0':'SNCA', '1':'BIP', '2':'ATF6', '3':'IRE1a',
-#                             '4':'PERK', '5':'CHOP','6':'XBP1', '7':'EIF2A',
-#                             '8':'ATF4', '9':'CHOP'})
+# G2_nodummy.add_attributes({'0':'HRAS',
+#                   '1':'ARAF',
+#                   '2':'MEK1',
+#                   '3':'ERK'})
 # G2_nodummy.add_edge(('0','1'))
 # G2_nodummy.add_edge(('1','2'))
-# G2_nodummy.add_edge(('1','3'))
-# G2_nodummy.add_edge(('1','4'))
-# G2_nodummy.add_edge(('2','5'))
-# G2_nodummy.add_edge(('3','6'))
-# G2_nodummy.add_edge(('4','7'))
-# G2_nodummy.add_edge(('7','8'))
-# G2_nodummy.add_edge(('8','9'))
+# G2_nodummy.add_edge(('2','3'))
+
+#%% build a subgraph (UPR): only need feature to find 
+G2_nodummy = Graph()
+G2_nodummy.add_attributes({'0':'SNCA', '1':'BIP', '2':'ATF6', '3':'IRE1a',
+                            '4':'PERK', '5':'CHOP','6':'XBP1', '7':'EIF2A',
+                            '8':'ATF4', '9':'CHOP'})
+G2_nodummy.add_edge(('0','1'))
+G2_nodummy.add_edge(('1','2'))
+G2_nodummy.add_edge(('1','3'))
+G2_nodummy.add_edge(('1','4'))
+G2_nodummy.add_edge(('2','5'))
+G2_nodummy.add_edge(('3','6'))
+G2_nodummy.add_edge(('4','7'))
+G2_nodummy.add_edge(('7','8'))
+G2_nodummy.add_edge(('8','9'))
 
 #%%
 G1=KEGGpathwayToGraph(P1)

@@ -124,6 +124,12 @@ def load_local_data(data_path,name,one_hot=False,attributes=True,use_node_deg=Fa
     if name=='fingerprint':
         path=data_path+'/Fingerprint/'
         dataset=build_Fingerprint_dataset(path,type_attr='real')
+    if name=='firstmm':
+        path=data_path+'/FIRSTMM_DB/'
+        if attributes:
+            dataset=build_FIRSTMM_dataset(path,type_attr='real')
+        else:
+            dataset=build_FIRSTMM_dataset(path)
         
         
     X,y=zip(*dataset) # the current label is only one bit 
@@ -544,6 +550,27 @@ def build_Fingerprint_dataset(path,type_attr='real'):
     node_dic=node_attr_dic(path,'Fingerprint_node_attributes.txt')
     adjency=compute_adjency(path,'Fingerprint_A.txt')
     data_dict=graph_indicator(path,'Fingerprint_graph_indicator.txt')
+    data=[]
+    for i in graphs:
+        g=Graph()
+        for node in data_dict[i[0]]:
+            g.name=i[0]
+            g.add_vertex(node)
+            g.add_one_attribute(node,node_dic[node])
+            for node2 in adjency[node]:
+                g.add_edge((node,node2))
+        data.append((g,i[1]))
+
+    return data
+
+def build_FIRSTMM_dataset(path,type_attr='real'):
+    graphs=graph_label_list(path,'FIRSTMM_DB_graph_labels.txt')
+    if type_attr=='label':
+        node_dic=node_labels_dic(path,'FIRSTMM_DB_node_labels.txt') # A voir pour les attributes
+    if type_attr=='real':
+        node_dic=node_attr_dic(path,'FIRSTMM_DB_node_attributes.txt')
+    adjency=compute_adjency(path,'FIRSTMM_DB_A.txt')
+    data_dict=graph_indicator(path,'FIRSTMM_DB_graph_indicator.txt')
     data=[]
     for i in graphs:
         g=Graph()

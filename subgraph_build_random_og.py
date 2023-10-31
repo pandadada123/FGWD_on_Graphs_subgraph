@@ -71,6 +71,8 @@ NumFea = [x for x in range(2, 41, 2)]
 # Alpha = np.linspace(0, 1, 11)
 # Alpha = [0.5]
 
+stopThr = 1e-9
+
 thre1 = 1e-9
 # thre2=-0.015000 # entropic
 thre2 = 1e-2
@@ -97,6 +99,7 @@ std_fea = 0
 str_mean = 0
 str_std = 0
 
+#%% bootstrap 
 def bootstrap_mean_confidence_interval(data, num_bootstraps=1000, alpha=0.05):
     """
     Calculate the 1-alpha confidence interval for the mean using bootstrap resampling.
@@ -127,18 +130,6 @@ def bootstrap_mean_confidence_interval(data, num_bootstraps=1000, alpha=0.05):
     upper_bound = np.percentile(bootstrap_means, upper_percentile)
 
     return lower_bound, upper_bound
-
-# %% build star graph
-
-
-def build_star_graph():
-    g = Graph()
-    g.add_attributes({0: 0, 1: 3, 2: 5, 3: 7})    # add color to nodes
-    g.add_edge((0, 1))
-    g.add_edge((1, 2))
-    g.add_edge((1, 3))
-
-    return g
 
 # %% build fully connected graph
 
@@ -184,9 +175,26 @@ def build_comunity_graph(N=30, numfea=3, pw=0.5):
 
     return g
 
+#%%
+def build_line_graph(N=30, numfea=3, fea_metric= 'dirac'):
+    g = Graph()
+    g.add_nodes(list(range(N)))
+    
+    if fea_metric == 'dirac':
+        # v=mu+sigma*np.random.randn(N);
+        # v=np.int_(np.floor(v)) # discrete attributes
+        # Fea = np.linspace(0,20,numfea)
+        Fea = list(range(0, numfea))
+        for i in range(N):
+            # g.add_one_attribute(i,v[i])
+            fea = random.choice(Fea)
+            g.add_one_attribute(i, fea)
+        for i in range(N-1):
+            g.add_edge((i, i+1))
+    
+    return g
+
 # %% merge community graphs
-
-
 def merge_graph(g1, g2):  # inputs are nx_graph
     gprime = nx.Graph(g1)
     N0 = len(gprime.nodes())
@@ -198,8 +206,6 @@ def merge_graph(g1, g2):  # inputs are nx_graph
     return gprime
 
 # %% build random graph G1
-
-
 def build_G1(G, N2=30, numfea=3, pw=0.5):
     # v=mu+sigma*np.random.randn(N);
     # v=np.int_(np.floor(v)) # discrete attributes
@@ -224,7 +230,6 @@ def build_G1(G, N2=30, numfea=3, pw=0.5):
 
     return G
 
-
 # %%
 DFGW_set = []
 Percent1 = []
@@ -240,6 +245,7 @@ Upper = []
 for numfea in NumFea:
     num = 0
     
+    #%%
     yes1 = 0
     yes2 = 0
     DFGW = np.zeros(Num)
@@ -253,38 +259,6 @@ for numfea in NumFea:
         plt.close("all")
         
         print("iter", num)
-
-        # %%
-        # N=5
-        # mu1=-1.5
-        # mu2=1.5
-        # mu3=3
-        # pw1=0.8
-        # pw2=0.3
-        # pw3=0.8
-        # vmin=-3
-        # vmax=7
-        # np.random.seed(12)
-        # G11=build_comunity_graph(N=N,mu=mu1,sigma=0.8,pw=pw1)
-        # G12=build_comunity_graph(N=N,mu=mu2,sigma=0.8,pw=pw2)
-        # G13=build_comunity_graph(N=N,mu=mu3,sigma=0.8,pw=pw3)
-        # com_graph={1:G11,2:G12,3:G13}
-
-        # %% merge
-        # n=0
-        # Num=[]
-        # while n<=3:
-        #     num=np.random.randint(1,4) # randomly generate a number within [1,2,3]
-        #     Num=np.append(Num,num)
-        #     g1=merge_graph(g1, com_graph[num].nx_graph)
-        #     n+=1
-
-        # G1=Graph(g1)
-
-        # %% build a fully connected graph (also the subgraph)
-        # G11=build_fully_graph(N=N,mu=mu1,sigma=0.01)
-        # G11 = build_star_graph()
-        # G11=build_comunity_graph(N=N,mu=mu1,sigma=2, pw=0.5)
 
         # %% build a random subgraoh
         # G0 = Graph() # an empty graph
@@ -314,8 +288,8 @@ for numfea in NumFea:
         #     continue
 
         
-        #%%
-        G2_nodummy = copy.deepcopy(G11)
+        #%% G1 is the test graph and G2_nodummy is the query graph
+        G2_nodummy = copy.deepcopy(G11) 
         # G2_nodummy=build_fully_graph(N=25,mu=mu1,sigma=0.3)        
         g1 = G1.nx_graph
         g2_nodummy = G2_nodummy.nx_graph
@@ -340,15 +314,6 @@ for numfea in NumFea:
             G2.add_attributes({len(G2.nodes()): 0})  # add dummy      
             
         g2 = G2.nx_graph
-
-        # %% check if every pair of nodes have path
-        # n1 = len(G1.nodes())
-        # try:
-        #     for ii in range(n1):
-        #           nx.shortest_path_length(g1,source=0,target=ii)
-        # except:
-        #     print("oops2")
-        #     continue
 
         # %%
         # vmin = 0
@@ -388,7 +353,7 @@ for numfea in NumFea:
         # FGWD
         # alpha = 0.5
         dfgw, log_FGWD, transp_FGWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
-            alpha=alpha, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1, G2, p1, p2, p2_nodummy)
+            alpha=alpha, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1, G2, p1, p2, p2_nodummy, stopThr=stopThr)
         
         end_time = time.time()
         
@@ -427,23 +392,7 @@ for numfea in NumFea:
         # plt.show()
 
         # print('Wasserstein distance={}, Gromov distance={} \nFused Gromov-Wasserstein distance for alpha {} = {}'.format(dw,dgw,alpha,dfgw))
-
-        # %%
-        # dfgw=dfgw/N # modified obj values 
-        
-        DFGW[num] = dfgw
-        if dfgw < thre1:
-            yes1 += 1
-        if dfgw < thre2:
-            yes2 += 1
-        if dfgw < thre3:
-            yes3 += 1
-            
-        time_x[num] = end_time - start_time
-        print("time", time_x[num])
-        
-        #%%
-        num += 1        
+   
         
         #%% check feature and structure to decide if it find an exact matching
         def check_transp(transp, h1, h2, Is_info):
@@ -480,59 +429,7 @@ for numfea in NumFea:
                 print(Fea1)
                 print("Features of the query graph:")
                 print(Fea2)
-                
-            # structure (create adj matrix in ascending order)
-            # print("Neighbours of source subgraph:")
-            # Structure_keys = list(h1._node.keys())
-            # Structure_source = list(h1._adj.values())
-            # Structure_source2 = {}  # the subgraph within the large graph, but with irrelevant nodes
-            # for source in index[:, 0]:
-            #     Structure_source2[Structure_keys[source]
-            #                       ] = Structure_source[source]
 
-            # temp_keys = list(Structure_source2.keys())
-            # for key in temp_keys:
-            #     for k in Structure_source2[key].copy():
-            #         if k not in temp_keys:
-            #             # delete the irrelevant nodes
-            #             Structure_source2[key].pop(k, None)
-            #     print(Structure_source2[key])
-
-            # print("Neighbours of query graph:")
-            # Structure_target = list(g2_nodummy._adj.values())
-            # for target in index[:, 1]:
-            #     print(Structure_target[target])
-
-
-            # # Adj matrix
-            # def generate_adjacency_matrix(graph_dict):
-            #     # Get all unique nodes from the dictionary keys
-            #     nodes = list(graph_dict.keys())
-            #     num_nodes = len(nodes)
-
-            #     # Initialize an empty adjacency matrix with zeros
-            #     adjacency_matrix = [[0] * num_nodes for _ in range(num_nodes)]
-
-            #     # Iterate over the graph dictionary
-            #     for node, connections in graph_dict.items():
-            #         # Get the index of the current node
-            #         node_index = nodes.index(node)
-
-            #         # Iterate over the connected nodes
-            #         for connected_node in connections.keys():
-            #             # Get the index of the connected node
-            #             connected_node_index = nodes.index(connected_node)
-
-            #             # Set the corresponding entry in the adjacency matrix to 1
-            #             adjacency_matrix[node_index][connected_node_index] = 1
-
-            #     return adjacency_matrix
-
-            # adjacency_subgraph = generate_adjacency_matrix(Structure_source2)
-            # adjacency_query = generate_adjacency_matrix(g2_nodummy._adj)
-            
-            
-                
             # structure
             A1 = nx.to_numpy_array(h1, nodelist=Keys1)
             A2 = nx.to_numpy_array(h2, nodelist=Keys2)
@@ -562,19 +459,40 @@ for numfea in NumFea:
             index3.append(1)
         else:
             index3.append(0)
-
+        
         # %%
-    print('Rate 1:',yes1/Num)
-    print('Rate 2:',yes2/Num)
+        
+        DFGW[num] = dfgw
+        if dfgw < thre1:
+            yes1 += 1
+        if dfgw < thre2:
+            yes2 += 1
+        if dfgw < thre3:
+            yes3 += 1
+            
+        time_x[num] = end_time - start_time
+        print("time", time_x[num])
+        
+        #%%
+        num += 1 # only succeed then proceed
+        
+        # %%
+    print('Rate 1: FGWD is almost zero',yes1/Num)
+    # print('Rate 2: find the approx matching:',yes2/Num)
     print('STD:',np.std(DFGW))
+    
     index3 = [index for index, value in enumerate(index3) if value == 1]
     Rate3= len(index3) / Num
     print('Rate 3: the matching is exactly right', Rate3)
-
+    
+    print('Rate 4: find the approx matching:',yes3/Num)
+    
     DFGW_set.append(DFGW)
     Percent1.append(yes1/Num)
     Percent2.append(yes2/Num)
-    Percent3.append(Rate3)
+    
+    Percent3.append(Rate3) # yes3-thre3-Percent4
+    
     Percent4.append(yes3/Num)
     
     Percent_set = [Percent1, Percent2, Percent3, Percent4]
