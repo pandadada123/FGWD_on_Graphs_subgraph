@@ -36,13 +36,13 @@ import dill as pickle
 import time 
 
 
-stopThr = 1e-09
+stopThr = 1e-9
 
 thre1 = stopThr
 # thre2=-0.015000 # entropic
 thre2 = stopThr
 
-epsilon = 1
+epsilon = 1e-1
         
 Is_fig = 0
 Is_info = 0
@@ -87,11 +87,11 @@ Upper = []
 # dataset_n='aids'
 # dataset_n='ptc'   # color is not a tuple
 # dataset_n='cox2'
-dataset_n='bzr'
-# dataset_n ='firstmm'
-# 
-dataset_name = 'BZR'
-# dataset_name = 'FIRSTMM_DB'
+# dataset_n='bzr'
+dataset_n ='firstmm'
+
+# dataset_name = 'BZR'
+dataset_name = 'FIRSTMM_DB'
 
 # path='/home/pan/dataset/data/'
 path='E:/Master Thesis/dataset/data/'
@@ -453,7 +453,7 @@ for num in range(NumG):
         # DIA.append(g2_diameter) # for different diameter
         
         #%% check feature and structure to decide if it find an exact matching
-        def check_transp(transp, h1, h2, Is_info):
+        def check_transp(transp, h1, h2, Is_info): # h1 is the big graph, h2 is the subgraph 
                
             transp_nolast = transp[:, 0:-1]
             index = np.argwhere(transp_nolast == np.max(transp_nolast,axis=0))     

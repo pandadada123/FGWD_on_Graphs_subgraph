@@ -167,6 +167,10 @@ from sqlalchemy import text
 # dataset_n='ptc'   # color is not a tuple
 # dataset_n='cox2'
 dataset_n='bzr'
+# dataset_n ='firstmm'
+
+dataset_name = 'BZR'
+# dataset_name = 'FIRSTMM_DB'
 
 path='E:/Master Thesis/dataset/data/'
 X,label=load_local_data(path,dataset_n,wl=0) 
@@ -180,8 +184,8 @@ NumQ_for_each_graph = 10
 
 Is_create_query = 0
 
-mean_fea = 1 # number of nodes that has been changed
-std_fea = 0.1 # zero mean Gaussian
+mean_fea = 0 # number of nodes that has been changed
+std_fea = 0 # zero mean Gaussian
 # str_mean = 0
 # str_std = 0.1
 # Generate a random string of given length
@@ -194,7 +198,7 @@ def random_string(length):
 # target_labels = query_labels + [random.choice(query_labels) for _ in range(100-5)]
 # target_labels = ['guardians', 'groot', 'star', 'guardians2']
 
-Eps = 1e-1
+Eps = 1
 
 missing_files_count = 0
 # Cost =np.zeros(NumQ)
@@ -211,18 +215,6 @@ Time_match = np.zeros((NumG,NumQ_for_each_graph))
 Time_opt = np.zeros((NumG,NumQ_for_each_graph))
 Time_total = np.zeros((NumG,NumQ_for_each_graph))
 Time_total_2 = np.zeros((NumG,NumQ_for_each_graph))
-
-# dataset_n='mutag' 
-# dataset_n='protein' 
-# dataset_n='protein_notfull' 
-# dataset_n='aids'
-# dataset_n='ptc'   # color is not a tuple
-# dataset_n='cox2'
-dataset_n='bzr'
-# dataset_n ='firstmm'
-# 
-dataset_name = 'BZR'
-# dataset_name = 'FIRSTMM_DB'
 
 for num in range(NumG):
     print("num=",num)
@@ -553,247 +545,274 @@ for num in range(NumG):
         
         # In[10]:
         
-        
-        with fornax.Connection('sqlite:///mydb1.sqlite') as conn:
-            target_graph = fornax.GraphHandle.create(conn)
-            target_graph.add_nodes(
-                # use id_src to set a custom id on each node 
-                id_src=nodes_df['target_id'],
-                # use other keyword arguments to attach arbitrary metadata to each node
-                label=nodes_df['target_label'],
-                # the type keyword is reserved to we use target_type
-                target_type=nodes_df['target_type']
-                # meta data must be json serialisable
-            )
-            target_graph.add_edges(edges_df['start'], edges_df['end'])
+        try:
+            with fornax.Connection('sqlite:///mydb1.sqlite') as conn:
+                target_graph = fornax.GraphHandle.create(conn)
+                target_graph.add_nodes(
+                    # use id_src to set a custom id on each node 
+                    id_src=nodes_df['target_id'],
+                    # use other keyword arguments to attach arbitrary metadata to each node
+                    label=nodes_df['target_label'],
+                    # the type keyword is reserved to we use target_type
+                    target_type=nodes_df['target_type']
+                    # meta data must be json serialisable
+                )
+                target_graph.add_edges(edges_df['start'], edges_df['end'])
+                
+                # target_graph.graph_id = None
+                
+            # We can use the `graph_id` to access our graph in the future.
             
-            # target_graph.graph_id = None
+            # In[11]:
             
-        # We can use the `graph_id` to access our graph in the future.
-        
-        # In[11]:
-        
-        
-        with fornax.Connection('sqlite:///mydb1.sqlite') as conn:
-            target_graph.graph_id
-            another_target_graph_handle = fornax.GraphHandle.read(conn, target_graph.graph_id)
-            print(another_target_graph_handle == target_graph)
-        
-        
-        # ## Creating a query graph
-        # 
-        # Let's imagine that we suspect `groot` is directly related to `guardians` and `star` is also directly related to `guardians`.
-        # For example `groot` and `star` could both be members of a team called `guardians`.
-        # Let's create another small graph that represents this situation:
-        
-        # In[12]:
-        
-        
-        with fornax.Connection('sqlite:///mydb1.sqlite') as conn:
-            # create a new graph
-            query_graph = fornax.GraphHandle.create(conn)
-        
-            # insert the three nodes: 
-            #   'guardians' (id=0), 'star' (id=1), 'groot' (id=2)
-            query_graph.add_nodes(label=query_labels)
-        
-            # alternatively:
-            #    query_graph.add_nodes(id_src=query_labels)
-            # since id_src can use any unique hashable items
-        
-            # edges = [
-            #     (0, 1), # edge between groot and guardians
-            #     (0, 2)  # edge between star and guardians
-            # ]
             
-            # if target graph is fully connected, so as the query graph
-            # edges = [ (0, 1), (0,2) , (0,3), (0,4),
-            #          (1,2), (1,3), (1,4),
-            #          (2,3), (2,4),
-            #          (3,4)
-            # ]
+            with fornax.Connection('sqlite:///mydb1.sqlite') as conn:
+                target_graph.graph_id
+                another_target_graph_handle = fornax.GraphHandle.read(conn, target_graph.graph_id)
+                print(another_target_graph_handle == target_graph)
             
-            edges = query_edges
             
-            # # Create a mapping from old query_id values to new ones
-            # query_id_mapping = {old_id: new_id for new_id, old_id in enumerate(set(query_id))}
-            # # Update query_id using the mapping
-            # query_id = [query_id_mapping[old_id] for old_id in query_id]
-            # # Update edges using the updated query_id values
-            # edges = [(query_id_mapping[source], query_id_mapping[target]) for source, target in edges]
+            # ## Creating a query graph
+            # 
+            # Let's imagine that we suspect `groot` is directly related to `guardians` and `star` is also directly related to `guardians`.
+            # For example `groot` and `star` could both be members of a team called `guardians`.
+            # Let's create another small graph that represents this situation:
             
-            sources, targets = zip(*edges)
+            # In[12]:
             
-            query_graph.add_edges(sources, targets)
-        
-            # query_graph.graph_id = None
-        
-        # ## Search
-        # 
-        # We can create a query in an analogous way to creating graphs using a `QueryHandle`,
-        # a handle to a query stored in the fornax database.
-        # To create a useful query we need to insert the string similarity scores we computed in part 1.
-        # Fornax will use these scores and the graph edges to execute the query.
-        
-        # In[13]:
-        
-        
-        with fornax.Connection('sqlite:///mydb1.sqlite') as conn:
-            query = fornax.QueryHandle.create(conn, query_graph, target_graph)
-            query.add_matches(matches['query_id'], matches['target_id'], matches['score'])
             
-            # query.qeury_id = None
-        
-        
-        # Finally we can execute the query using a variety of options.
-        # We specify we want the top 5 best matches between the query graph and the target graph.
-        
-        # In[14]:
-        
-        
-        with fornax.Connection('sqlite:///mydb1.sqlite') as conn:
+            with fornax.Connection('sqlite:///mydb1.sqlite') as conn:
+                # create a new graph
+                query_graph = fornax.GraphHandle.create(conn)
             
-            start_time = time.time()
-            results = query.execute(n=1, hopping_distance=1)  # top-n results
-            end_time = time.time()
-            Time_execute[num,numq] = end_time - start_time
+                # insert the three nodes: 
+                #   'guardians' (id=0), 'star' (id=1), 'groot' (id=2)
+                query_graph.add_nodes(label=query_labels)
             
-        # ## Visualise
-        # 
-        # `query.execute` returns an object describing the search result.
-        # Of primary interest is the `graph` field which contains a list of graphs in `node_link_graph` format.
-        # We can use networkx to draw these graphs and visualise the results.
-        
-        # In[15]:
-        
-        
-        def draw(graph):
-            """ function for drawing a graph using matplotlib and networkx"""
+                # alternatively:
+                #    query_graph.add_nodes(id_src=query_labels)
+                # since id_src can use any unique hashable items
             
-            # each graph is already in node_link_graph format 
-            G = nx.json_graph.node_link_graph(graph)
+                # edges = [
+                #     (0, 1), # edge between groot and guardians
+                #     (0, 2)  # edge between star and guardians
+                # ]
+                
+                # if target graph is fully connected, so as the query graph
+                # edges = [ (0, 1), (0,2) , (0,3), (0,4),
+                #          (1,2), (1,3), (1,4),
+                #          (2,3), (2,4),
+                #          (3,4)
+                # ]
+                
+                edges = query_edges
+                
+                # # Create a mapping from old query_id values to new ones
+                # query_id_mapping = {old_id: new_id for new_id, old_id in enumerate(set(query_id))}
+                # # Update query_id using the mapping
+                # query_id = [query_id_mapping[old_id] for old_id in query_id]
+                # # Update edges using the updated query_id values
+                # edges = [(query_id_mapping[source], query_id_mapping[target]) for source, target in edges]
+                
+                sources, targets = zip(*edges)
+                
+                query_graph.add_edges(sources, targets)
             
-            labels = {node['id']: node['label'] for node in graph['nodes']}
-            node_colour = ['r' if node['type'] == 'query' else 'b' for node in graph['nodes']]
-            pos = nx.spring_layout(G)
+                # query_graph.graph_id = None
             
-            nx.draw_networkx_nodes(G, pos, node_size=600, node_color=node_colour, alpha=.3)
+            # ## Search
+            # 
+            # We can create a query in an analogous way to creating graphs using a `QueryHandle`,
+            # a handle to a query stored in the fornax database.
+            # To create a useful query we need to insert the string similarity scores we computed in part 1.
+            # Fornax will use these scores and the graph edges to execute the query.
             
-            edgelist = [(e['source'], e['target']) for e in graph['links'] if e['type'] != 'match']
-            nx.draw_networkx_edges(G, pos, width=3, edgelist=edgelist, edge_color='grey', alpha=.3)
+            # In[13]:
             
-            edgelist = [(e['source'], e['target']) for e in graph['links'] if e['type'] == 'match']
-            nx.draw_networkx_edges(G, pos, width=3, edgelist=edgelist, style='dashed', edge_color='pink')
             
-            nx.draw_networkx_labels(G, pos, font_size=12, font_family='sans-serif', labels=labels)
-        
-        
-        # Result 1 contains the best match. The three query nodes (in red) best match the three target nodes (in blue). The dashed lines show which pairs of query and target nodes matched each other. The blue nodes are a subgraph of the target graph. Note that the result does not describe the whole target graph because in principle it can be very large.
-        # 
-        # Here we can see that the blue subgraph has exactly the same shape as the red query graph. However, the labels are not exactly the same (e.g. `guardians != Guardians of the Galaxy`) so the result scores less than the maximum score of 1.
-        # However, we can see that our query graph is really similar to Groot and Star-Lord from Guardians of the Galaxy.
-        # Since this is the best match we know that 
-        
-        # # In[16]:
-        
-        
-        # for i, graph in enumerate(results['graphs'][:1]):
-        #     # plt.title('Result {0}, score: {1:.2f}'.format(1, 1. - graph['cost']))
-        #     plt.title('Result {0}, score: {1:.2f}'.format(1, graph['cost']))
-        #     draw(graph)
-        #     plt.xlim(-1.2,1.2)
-        #     plt.ylim(-1.2,1.2)
-        #     plt.axis('off')
-        #     plt.show()
-        
-        
-        # # Results 2-4 have a lower score because `star` matches to a different node not adjacent to Guardians of the Galaxy. Further inspection would show that `star` has matched aliases of Star-Lord which are near Guardians of the Galaxy but not ajacent to it.
-        
-        # # In[17]:
-        
-        
-        # for i, graph in enumerate(results['graphs'][1:4]):
-        #     # plt.title('Result {0}, score: {1:.2f}'.format(i+2, 1. - graph['cost']))
-        #     plt.title('Result {0}, score: {1:.2f}'.format(i+2, graph['cost']))
-        #     draw(graph)
-        #     plt.xlim(-1.2,1.2)
-        #     plt.ylim(-1.2,1.2)
-        #     plt.axis('off')
-        #     plt.show()
-        
-        
-        # # The final match pairs `guardians` and `star` to two nodes that do not have similar edges to the target graph. `groot` is not found in the target graph. The result gets a much lower score than the preceding results and we can be sure that any additional results will also be poor because the result are ordered.
-        
-        # # In[18]:
-        
-        
-        # for i, graph in enumerate(results['graphs'][4:]):
-        #     # plt.title('Result {0}, score: {1:.2f}'.format(i+5, 1. - graph['cost']))
-        #     plt.title('Result {0}, score: {1:.2f}'.format(i+5, graph['cost']))
-        #     draw(graph)
-        #     plt.xlim(-1.2,1.2)
-        #     plt.ylim(-1.2,1.2)
-        #     plt.axis('off')
-        #     plt.show()
-        
-        #%%
-        for i, graph in enumerate(results['graphs'][:1]):        
-            edgelist = [(e['source'], e['target']) for e in graph['links'] if e['type'] == 'match']
-            labels = {node['id']: node['label'] for node in graph['nodes']}
-            Cost[num,numq] = graph['cost']
-            ratio = 1
-            query_labels_original 
-            query_labels
+            with fornax.Connection('sqlite:///mydb1.sqlite') as conn:
+                query = fornax.QueryHandle.create(conn, query_graph, target_graph)
+                query.add_matches(matches['query_id'], matches['target_id'], matches['score'])
+                
+                # query.qeury_id = None
+            
+            
+            # Finally we can execute the query using a variety of options.
+            # We specify we want the top 5 best matches between the query graph and the target graph.
+            
+            # In[14]:
+            
+            
+            with fornax.Connection('sqlite:///mydb1.sqlite') as conn:
+                
+                start_time = time.time()
+                results = query.execute(n=1, hopping_distance=1)  # top-n results
+                end_time = time.time()
+                Time_execute[num,numq] = end_time - start_time
+                
+            # ## Visualise
+            # 
+            # `query.execute` returns an object describing the search result.
+            # Of primary interest is the `graph` field which contains a list of graphs in `node_link_graph` format.
+            # We can use networkx to draw these graphs and visualise the results.
+            
+            # In[15]:
+            
+            
+            def draw(graph):
+                """ function for drawing a graph using matplotlib and networkx"""
+                
+                # each graph is already in node_link_graph format 
+                G = nx.json_graph.node_link_graph(graph)
+                
+                labels = {node['id']: node['label'] for node in graph['nodes']}
+                node_colour = ['r' if node['type'] == 'query' else 'b' for node in graph['nodes']]
+                pos = nx.spring_layout(G)
+                
+                nx.draw_networkx_nodes(G, pos, node_size=600, node_color=node_colour, alpha=.3)
+                
+                edgelist = [(e['source'], e['target']) for e in graph['links'] if e['type'] != 'match']
+                nx.draw_networkx_edges(G, pos, width=3, edgelist=edgelist, edge_color='grey', alpha=.3)
+                
+                edgelist = [(e['source'], e['target']) for e in graph['links'] if e['type'] == 'match']
+                nx.draw_networkx_edges(G, pos, width=3, edgelist=edgelist, style='dashed', edge_color='pink')
+                
+                nx.draw_networkx_labels(G, pos, font_size=12, font_family='sans-serif', labels=labels)
+            
+            
+            # Result 1 contains the best match. The three query nodes (in red) best match the three target nodes (in blue). The dashed lines show which pairs of query and target nodes matched each other. The blue nodes are a subgraph of the target graph. Note that the result does not describe the whole target graph because in principle it can be very large.
+            # 
+            # Here we can see that the blue subgraph has exactly the same shape as the red query graph. However, the labels are not exactly the same (e.g. `guardians != Guardians of the Galaxy`) so the result scores less than the maximum score of 1.
+            # However, we can see that our query graph is really similar to Groot and Star-Lord from Guardians of the Galaxy.
+            # Since this is the best match we know that 
+            
+            # # In[16]:
+            
+            
+            # for i, graph in enumerate(results['graphs'][:1]):
+            #     # plt.title('Result {0}, score: {1:.2f}'.format(1, 1. - graph['cost']))
+            #     plt.title('Result {0}, score: {1:.2f}'.format(1, graph['cost']))
+            #     draw(graph)
+            #     plt.xlim(-1.2,1.2)
+            #     plt.ylim(-1.2,1.2)
+            #     plt.axis('off')
+            #     plt.show()
+            
+            
+            # # Results 2-4 have a lower score because `star` matches to a different node not adjacent to Guardians of the Galaxy. Further inspection would show that `star` has matched aliases of Star-Lord which are near Guardians of the Galaxy but not ajacent to it.
+            
+            # # In[17]:
+            
+            
+            # for i, graph in enumerate(results['graphs'][1:4]):
+            #     # plt.title('Result {0}, score: {1:.2f}'.format(i+2, 1. - graph['cost']))
+            #     plt.title('Result {0}, score: {1:.2f}'.format(i+2, graph['cost']))
+            #     draw(graph)
+            #     plt.xlim(-1.2,1.2)
+            #     plt.ylim(-1.2,1.2)
+            #     plt.axis('off')
+            #     plt.show()
+            
+            
+            # # The final match pairs `guardians` and `star` to two nodes that do not have similar edges to the target graph. `groot` is not found in the target graph. The result gets a much lower score than the preceding results and we can be sure that any additional results will also be poor because the result are ordered.
+            
+            # # In[18]:
+            
+            
+            # for i, graph in enumerate(results['graphs'][4:]):
+            #     # plt.title('Result {0}, score: {1:.2f}'.format(i+5, 1. - graph['cost']))
+            #     plt.title('Result {0}, score: {1:.2f}'.format(i+5, graph['cost']))
+            #     draw(graph)
+            #     plt.xlim(-1.2,1.2)
+            #     plt.ylim(-1.2,1.2)
+            #     plt.axis('off')
+            #     plt.show()
             
             #%%
-            # Step 1: Create lists list_A and list_B
-            list_A = [labels[node_id] for node_id, _ in edgelist]
-            list_B = [labels[node_id] for _, node_id in edgelist]
-            
-            # Step 2: Find indices of elements in list_A that are in query_labels
-            indices = [i for i, label in enumerate(list_A) if label in query_labels]
-            
-            # Step 3: Reorder query_labels_original based on indices
-            query_labels_original_reorder = [query_labels_original[i] for i in indices]
-            
-            # Step 4: Compare list_B and query_labels_original_reorder
-            matching_count = sum(1 for x, y in zip(list_B, query_labels_original_reorder) if x == y)
-            
-            # Print the count of matching elements
-            print("Number of matching elements between list_B and query_labels_original_reorder:", matching_count)
-            #%% Ratio of nodes that are matched
-            ratio = matching_count / len(edgelist)
-            
-        #%%
-        Ratio[num,numq] = ratio
-        Time_opt[num,numq] = results['time']
+            for i, graph in enumerate(results['graphs'][:1]):        
+                edgelist = [(e['source'], e['target']) for e in graph['links'] if e['type'] == 'match']
+                labels = {node['id']: node['label'] for node in graph['nodes']}
+                Cost[num,numq] = graph['cost']
+                ratio = 1
+                query_labels_original 
+                query_labels
+                
+                #%%
+                # Step 1: Create lists list_A and list_B
+                list_A = [labels[node_id] for node_id, _ in edgelist]
+                list_B = [labels[node_id] for _, node_id in edgelist]
+                
+                # Step 2: Find indices of elements in list_A that are in query_labels
+                indices = [i for i, label in enumerate(list_A) if label in query_labels]
+                
+                # Step 3: Reorder query_labels_original based on indices
+                query_labels_original_reorder = [query_labels_original[i] for i in indices]
+                
+                # Step 4: Compare list_B and query_labels_original_reorder
+                matching_count = sum(1 for x, y in zip(list_B, query_labels_original_reorder) if x == y)
+                
+                # Print the count of matching elements
+                print("Number of matching elements between list_B and query_labels_original_reorder:", matching_count)
+                #%% Ratio of nodes that are matched
+                ratio = matching_count / len(edgelist)
         
-        print('ratio', Ratio[num,numq])
-        print('time_execute', Time_execute[num,numq])
-        print('time_match', Time_match[num,numq])
-        
-        print('cost', Cost[num,numq])
-        
-        Time_total[num,numq] = Time_execute[num,numq] + Time_match[num,numq]
-        Time_total_2[num,numq] = results['time_total'] + Time_match[num,numq]
-        print('time_total', Time_total[num,numq])
-        print('time_total_2', Time_total_2[num,numq])
-        
-        with fornax.Connection('sqlite:///mydb1.sqlite') as conn:  # introduce connection first 
-            # cursor = conn.cursor()
             
-            # cursor.execute('DELETE FROM graphs')
-            query.delete()
-            target_graph.delete()
-            query_graph.delete()
-            # fornax.conn.close()    
-            # conn.commit()
-            sql_statement = text(f'DELETE FROM match;')
-            conn.session.execute(sql_statement)
-            conn.session.commit()
+            #%%
+            Ratio[num,numq] = ratio
+            Time_opt[num,numq] = results['time']
             
-            conn.close()
-    
+            print('ratio', Ratio[num,numq])
+            print('time_execute', Time_execute[num,numq])
+            print('time_match', Time_match[num,numq])
+            
+            print('cost', Cost[num,numq])
+            
+            Time_total[num,numq] = Time_execute[num,numq] + Time_match[num,numq]
+            Time_total_2[num,numq] = results['time_total'] + Time_match[num,numq]
+            print('time_total', Time_total[num,numq])
+            print('time_total_2', Time_total_2[num,numq])
+            
+            
+            with fornax.Connection('sqlite:///mydb1.sqlite') as conn:  # introduce connection first 
+                # cursor = conn.cursor()
+                
+                # cursor.execute('DELETE FROM graphs')
+                query.delete()
+                target_graph.delete()
+                query_graph.delete()
+                # fornax.conn.close()    
+                # conn.commit()
+                sql_statement = text(f'DELETE FROM match;')
+                conn.session.execute(sql_statement)
+                conn.session.commit()
+                
+                conn.close()
+        
+        except:
+            print("Did not succeed")
+            Ratio[num,numq] = 0
+            Time_match[num,numq] = np.nan # actually not nan, but we just want to leave out this case 
+            Time_execute[num,numq] = np.nan
+            Time_opt[num,numq] = np.nan 
+            Time_total[num,numq] = np.nan
+            Time_total_2[num,numq] = np.nan
+            Cost[num,numq] = np.nan
+            
+            with fornax.Connection('sqlite:///mydb1.sqlite') as conn:  # introduce connection first 
+                # cursor = conn.cursor()
+                
+                # cursor.execute('DELETE FROM graphs')
+                # query.delete()
+                target_graph.delete()
+                # query_graph.delete()
+                # fornax.conn.close()    
+                # conn.commit()
+                sql_statement = text(f'DELETE FROM match;')
+                conn.session.execute(sql_statement)
+                conn.session.commit()
+                
+                conn.close()
+                
 #%% 
 # file_path_1 = "E:/Master Thesis/results/nema/Ratio.npy"
 # file_path_2 = "E:/Master Thesis/results/nema/Time.npy"
@@ -812,16 +831,16 @@ for num in range(NumG):
 
 #%%
 print("Overall")
-print('the ratio of correct nodes', np.mean(Ratio))
-print('Time_execute', np.mean(Time_execute))
-print('Time_match', np.mean(Time_match))
+print('the ratio of correct nodes', np.nanmean(Ratio))
+print('Time_execute', np.nanmean(Time_execute))
+print('Time_match', np.nanmean(Time_match))
 
-print('Time_opt', np.mean(Time_opt))
-print('Time_total', np.mean(Time_total))
-print('Time_total_new', np.mean(Time_total_2))
+print('Time_opt', np.nanmean(Time_opt))
+print('Time_total', np.nanmean(Time_total))
+print('Time_total_new', np.nanmean(Time_total_2))
 
-print('cost_mean', np.mean(Cost / N))
-print('cost_std', np.std(Cost / N))
+print('cost_mean', np.nanmean(Cost / N))
+print('cost_std', np.nanstd(Cost / N))
 
     #%%
     

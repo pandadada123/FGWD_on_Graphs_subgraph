@@ -68,8 +68,8 @@ str_metric = 'adj'
 
 alpha = 0.5
 
-mean_fea = 0 # number of nodes that has been changed
-std_fea = 0 # zero mean Gaussian
+mean_fea = 1 # number of nodes that has been changed
+std_fea = 0.1 # zero mean Gaussian
 # str_mean = 0
 # str_std = 0.1
 NumQ_for_each_graph = 10
@@ -372,7 +372,7 @@ for num in range(NumG):
         print("time", time_x[num,numq])
             
         #%% check feature and structure to decide if it find an exact matching
-        def check_transp(transp, h1, h2, Is_info):
+        def check_transp(transp, h1, h2, Is_info): # h1 is the big graph, h2 is the subgraph 
                
             transp_nolast = transp[:, 0:-1]
             index = np.argwhere(transp_nolast == np.max(transp_nolast,axis=0))     
