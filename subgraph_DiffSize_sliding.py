@@ -27,6 +27,7 @@ from lib1.ot_distances import Fused_Gromov_Wasserstein_distance
 import scipy.stats as st
 import time
 
+stopThr = 1e-09
 
 N = 8 # size of query
 S = 6 # size of subgraph
@@ -288,7 +289,7 @@ for center_node in g1.nodes():
     # epsilon = thre1
     # alpha = 0
     dw, log_WD, transp_WD, M, C1, C2  = Fused_Gromov_Wasserstein_distance(
-        alpha=alpha1, features_metric=fea_metric, method=str_metric, loss_fun=loss_fun).graph_d(G1_sliding, G2, p1, p2, p2_nodummy)
+        alpha=alpha1, features_metric=fea_metric, method=str_metric, loss_fun=loss_fun).graph_d(G1_sliding, G2, p1, p2, p2_nodummy, stopThr=stopThr)
     time4=time.time()
     if dw > epsilon:
         print("filter out")
@@ -298,7 +299,7 @@ for center_node in g1.nodes():
     # %% FGWD
     # alpha = 0.5
     dfgw, log_FGWD, transp_FGWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
-        alpha=alpha2, features_metric=fea_metric, method=str_metric, loss_fun=loss_fun).graph_d(G1_sliding, G2, p1, p2, p2_nodummy)
+        alpha=alpha2, features_metric=fea_metric, method=str_metric, loss_fun=loss_fun).graph_d(G1_sliding, G2, p1, p2, p2_nodummy, stopThr=stopThr)
     time6=time.time()
     end_time = time.time()
     # %% keep an record of the successful sliding subgraphs and their dw

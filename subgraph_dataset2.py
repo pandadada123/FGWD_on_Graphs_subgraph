@@ -35,6 +35,8 @@ import pickle
 
 sys.modules[__name__].__dict__.clear()
 
+stopThr = 1e-09
+
 thre1 = 1e-9
 # thre2=-0.015000 # entropic
 thre2 = 1e-4    
@@ -441,7 +443,7 @@ for num in range(NumQ):
             # epsilon = thre2
             # alpha = 0
             dw, log_WD, transp_WD, M, C1, C2  = Fused_Gromov_Wasserstein_distance(
-                alpha=alpha1, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy)
+                alpha=alpha1, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy, stopThr=stopThr)
             
             if dw > epsilon:
                 print("filter out")
@@ -452,7 +454,7 @@ for num in range(NumQ):
             #%% FGWD
             # alpha = 0.5
             dfgw, log_FGWD, transp_FGWD, M, C1, C2 = Fused_Gromov_Wasserstein_distance(
-                alpha=alpha2, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy)
+                alpha=alpha2, features_metric=fea_metric, method=str_metric, loss_fun='square_loss').graph_d(G1_subgraph, G2, p1, p2, p2_nodummy, stopThr=stopThr)
             
             #%% results from all sliding subgraphs
             dfgw_sub.append(dfgw)

@@ -48,6 +48,8 @@ fea_metric = 'sqeuclidean'
 # str_metric = 'shortest_path'
 str_metric = 'adj'
 
+stopThr=1e-09
+
 #%% plot the test graphs:
 for i in range(1):
     x=X[i]
@@ -145,7 +147,7 @@ for i in range(NumG):
         # plt.show()
         
   
-        dfgw,log_FGWD,transp_FGWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=alpha, features_metric= fea_metric, method= str_metric, loss_fun='square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
+        dfgw,log_FGWD,transp_FGWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=alpha, features_metric= fea_metric, method= str_metric, loss_fun='square_loss').graph_d(G1,G2,p1,p2,p2_nodummy, stopThr=stopThr)
         
         # plt.figure(figsize=(8,5))
         # # plt.title('FGWD coupling')

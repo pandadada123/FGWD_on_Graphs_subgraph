@@ -6,6 +6,8 @@ Created on Tue May  2 14:03:35 2023
 """
 
 import os,sys,inspect
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)

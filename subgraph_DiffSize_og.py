@@ -27,6 +27,7 @@ from lib1.ot_distances import Fused_Gromov_Wasserstein_distance
 import scipy.stats as st
 import time
 
+stopThr = 1e-09
 
 N = 8 # size of query
 S = 6 # size of subgraph
@@ -171,14 +172,14 @@ thresh=0.004
 # WD
 fig=plt.figure()
 # dw,transp_WD=Wasserstein_distance(features_metric=fea_metric).graph_d(G1,G2,p1,p2)
-dw,log_WD,transp_WD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=0,features_metric=fea_metric,method=str_metric,loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
+dw,log_WD,transp_WD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=0,features_metric=fea_metric,method=str_metric,loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy, stopThr=stopThr)
 plt.title('WD coupling')
 draw_transp(G1,G2,transp_WD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
 plt.show()
 
 # GWD
 fig=plt.figure()
-dgw,log_GWD,transp_GWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=1,features_metric=fea_metric,method=str_metric,loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
+dgw,log_GWD,transp_GWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=1,features_metric=fea_metric,method=str_metric,loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy, stopThr=stopThr)
 plt.title('GWD coupling')
 draw_transp(G1,G2,transp_GWD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
 plt.show()
@@ -186,7 +187,7 @@ plt.show()
 # FGWD
 alpha=0.5
 fig=plt.figure()
-dfgw,log_FGWD,transp_FGWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=alpha,features_metric=fea_metric,method=str_metric,loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
+dfgw,log_FGWD,transp_FGWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=alpha,features_metric=fea_metric,method=str_metric,loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy, stopThr=stopThr)
 plt.title('test graph and FGWD coupling')
 draw_transp(G1,G2,transp_FGWD,shiftx=2,shifty=0.5,thresh=thresh,swipy=True,swipx=False,with_labels=True,vmin=vmin,vmax=vmax)
 plt.show()

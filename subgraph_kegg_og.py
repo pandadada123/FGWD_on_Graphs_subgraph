@@ -6,6 +6,8 @@ Created on Tue May  2 14:03:35 2023
 """
 
 import os,sys,inspect
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
@@ -130,6 +132,7 @@ str_metric = 'adj'
 vmin=0
 vmax=9  # the range of color
 thresh=0.004
+
 # FGWD
 alpha=0.5
 dfgw,log_FGWD,transp_FGWD,M,C1,C2=Fused_Gromov_Wasserstein_distance(alpha=alpha, features_metric=fea_metric, method= str_metric ,loss_fun= 'square_loss').graph_d(G1,G2,p1,p2,p2_nodummy)
