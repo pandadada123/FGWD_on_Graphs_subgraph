@@ -185,18 +185,38 @@ class Graph():
             return self.C
 
 
-    def all_matrix_attr(self,return_invd=False):
-        d=dict((k, v) for k, v in self.nx_graph.nodes.items())
-        x=[]
-        invd={}
-        try :
-            j=0
-            for k,v in d.items():
-                x.append(v['attr_name'])
-                invd[k]=j
-                j=j+1
+    # def all_matrix_attr(self,return_invd=False):
+    #     d=dict((k, v) for k, v in self.nx_graph.nodes.items())
+    #     x=[]
+    #     invd={}
+    #     try :
+    #         j=0
+    #         for k,v in d.items():
+    #             x.append(v['attr_name'])
+    #             invd[k]=j
+    #             j=j+1
+    #         if return_invd:
+    #             return np.array(x),invd
+    #         else:
+    #             return np.array(x)
+    #     except KeyError:
+    #         raise NoAttrMatrix
+            
+    def all_matrix_attr(self, return_invd=False):
+        d = dict((k, v) for k, v in self.nx_graph.nodes.items())
+        x = []
+        invd = {}
+        try:
+            # Sort the keys of the dictionary d
+            sorted_keys = sorted(d.keys())
+            
+            # Use the sorted keys to populate x and invd
+            for j, k in enumerate(sorted_keys):
+                x.append(d[k]['attr_name'])
+                invd[k] = j
+    
             if return_invd:
-                return np.array(x),invd
+                return np.array(x), invd
             else:
                 return np.array(x)
         except KeyError:
