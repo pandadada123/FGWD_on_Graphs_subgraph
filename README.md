@@ -1,6 +1,13 @@
 # Subgraph Matching via Fused Gromov-Wasserstein Distance
 MSc Thesis link here: http://resolver.tudelft.nl/uuid:d18d7083-4189-46a7-bd03-4cf49674cffe
 
+#### Main references
+- [POT Python Optimal Transport library](https://github.com/rflamary/POT)
+- [Optimal Transport for structured data with application on graphs](https://github.com/tvayer/FGW)
+- [Partial Optimal Transport](https://github.com/lchapel/partial-GW-for-PU)
+- [fornax](https://github.com/digicatapult/fornax)
+- [G-Finder](https://github.com/lihuiliullh/GFinder)
+
 #### Libraries
 - [lib0](/lib0): Implementation by definition (simple but computationally expensive)
 - [lib1](/lib1): Implementation with Peyre's trick (mostly used in the thesis)
