@@ -26,7 +26,7 @@ MSc Thesis link here: http://resolver.tudelft.nl/uuid:d18d7083-4189-46a7-bd03-4c
 - [subgraph_nema_random.py](/subgraph_nema_random.py): search with NeMa 
 
 #### Real-world datasets
-- [subgraph_dataset_og.py](/subgraph_dataset_og.py): search within a large single graph with SOT
+- [subgraph_dataset_og.py](/subgraph_dataset_og.py): search within multiple graphs (search each query in the current test graph) with SOT
 - [subgraph_dataset_sliding.py](/subgraph_dataset_sliding.py): search within a large single graph with SSOT
 - [subgraph_dataset2.py](/subgraph_dataset2.py): search within multiple graphs (search each query in every test graph) with SSOT
 - [subgraph_dataset2.1.py](/subgraph_dataset2.1.py): search within multiple graphs (search each query in the current test graph) with SSOT
